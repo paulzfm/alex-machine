@@ -171,17 +171,17 @@ F0~F15. All floating-point registers have 64 bits, i.e, they are represented in 
 
 | Name | Machine Code | Meaning |
 | :--- | :----------- | :-------- |
-| LW  | 2D ra rb imm | ra := word(rb + imm) |
-| LH  | 2E ra rb imm | ra := half(rb + imm) |
-| LB  | 2F ra rb imm | ra := byte(rb + imm) |
-| LF  | 30 fa ra imm | fa := long(ra + imm) |
-| LI  | 31 ra ... imm| ra := imm |
-| LIU | 32 ra ... imm| ra := unsigned(imm) |
-| LIH | 33 ra ... imm| ra := imm << 16 |
-| SW  | 34 ra rb imm | word(rb + imm) := ra |
-| SH  | 35 ra rb imm | half(rb + imm) := ra(15..0) |
-| SB  | 36 ra rb imm | byte(rb + imm) := ra(7..0) |
-| SF  | 37 ra fa imm | long(ra + imm) := fa |
+| LW  | 2D ra rb imm | ra := word(rb + signed_ext(imm)) |
+| LH  | 2E ra rb imm | ra := half(rb + signed_ext(imm)) |
+| LB  | 2F ra rb imm | ra := byte(rb + signed_ext(imm)) |
+| LF  | 30 fa ra imm | fa := long(ra + signed_ext(imm)) |
+| LI  | 31 ra ... imm| ra := signed_ext(imm) |
+| LIU | 32 ra ... imm| ra := unsigned_ext(imm) |
+| LIH | 33 ra ... imm| ra := unsigned_ext(imm) << 16 |
+| SW  | 34 ra rb imm | word(rb + signed_ext(imm)) := ra |
+| SH  | 35 ra rb imm | half(rb + signed_ext(imm)) := ra(15..0) |
+| SB  | 36 ra rb imm | byte(rb + signed_ext(imm)) := ra(7..0) |
+| SF  | 37 ra fa imm | long(ra + signed_ext(imm)) := fa |
 
 ### Stack
 
