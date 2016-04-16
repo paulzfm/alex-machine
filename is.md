@@ -162,7 +162,7 @@ F0~F15. All floating-point registers have 64 bits, i.e, they are represented in 
 | BNEZ | 26 ra R0 imm   | if ra != 0 then PC := PC + offset(imm) |
 | BLT  | 27 ra rb imm   | if ra < rb then PC := PC + offset(imm) |
 | BGT  | 28 ra rb imm   | if ra > rb then PC := PC + offset(imm) |
-| J    | 29 imm(24 bits)| PC := PC(31..28) ++ imm ++ 00 |
+| J    | 29 imm(24 bits)| PC := PC(31..26) ++ imm ++ 00 |
 | JR   | 2A ra ... ...  | PC := ra |
 | CALL | 2B ra ... ...  | word(SP - 4) := PC + 4, SP := SP - 4, PC := ra |
 | RET  | 2C ... ... ... | _ := word(SP), SP := SP + 4, PC := _ |
