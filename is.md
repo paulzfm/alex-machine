@@ -144,13 +144,13 @@ F0~F15. All floating-point registers have 64 bits, i.e, they are represented in 
 | EQ   | 1A ra rb rc | ra := if rb = rc then 1 else 0 |
 | NE   | 1B ra rb rc | ra := if rb != rc then 1 else 0 |
 | LT   | 1C ra rb rc | ra := if rb < rc then 1 else 0 |
-| LTU  | 1D ra rb rc | ra := if unsigned(rb) < unsigned(rb) then 1 else 0 |
+| LTU  | 1D ra rb rc | ra := if unsigned(rb) < unsigned(rc) then 1 else 0 |
 | GT   | 1E ra rb rc | ra := if rb > rc then 1 else 0 |
-| GTU  | 1F ra rb rc | ra := if unsigned(rb) > unsigned(rb) then 1 else 0 |
+| GTU  | 1F ra rb rc | ra := if unsigned(rb) > unsigned(rc) then 1 else 0 |
 | LE   | 20 ra rb rc | ra := if rb <= rc then 1 else 0 |
-| LEU  | 21 ra rb rc | ra := if unsigned(rb) <= unsigned(rb) then 1 else 0 |
+| LEU  | 21 ra rb rc | ra := if unsigned(rb) <= unsigned(rc) then 1 else 0 |
 | GE   | 22 ra rb rc | ra := if rb >= rc then 1 else 0 |
-| GEU  | 23 ra rb rc | ra := if unsigned(rb) >= unsigned(rb) then 1 else 0 |
+| GEU  | 23 ra rb rc | ra := if unsigned(rb) >= unsigned(rc) then 1 else 0 |
 
 ### Branch/Jump
 
