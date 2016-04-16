@@ -110,7 +110,7 @@ F0~F15. All floating-point registers have 64 bits, i.e, they are represented in 
 
 | Name | Machine Code | Meaning |
 | :----- | :----------- | :-------- |
-| NOP | 00000000 0000 0000 0000 000000000000 | do nothing |
+| NOP | all zero | do nothing |
 
 ### Arithmetic/Logic
 
