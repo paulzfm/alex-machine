@@ -139,6 +139,7 @@ F0~F15. All floating-point registers have 64 bits, i.e, they are represented in 
 | SARI | 15 ra rb imm| ra := rb >> imm |
 | AND  | 16 ra rb rc | ra := rb and rc |
 | OR   | 17 ra rb rc | ra := rb or rc |
+| ORI  | 42 ra rb imm| ra := rb or unsigned_ext(imm) |
 | XOR  | 18 ra rb rc | ra := rb xor rc |
 | NOT  | 19 ra rb ...| ra := not rb |
 | EQ   | 1A ra rb rc | ra := if rb = rc then 1 else 0 |
@@ -172,8 +173,8 @@ F0~F15. All floating-point registers have 64 bits, i.e, they are represented in 
 | Name | Machine Code | Meaning |
 | :--- | :----------- | :-------- |
 | LW  | 2D ra rb imm | ra := word(rb + signed_ext(imm)) |
-| LH  | 2E ra rb imm | ra := half(rb + signed_ext(imm)) |
-| LB  | 2F ra rb imm | ra := byte(rb + signed_ext(imm)) |
+| LH  | 2E ra rb imm | ra(15..0) := half(rb + signed_ext(imm)), ra(31..16) := 0x0000 |
+| LB  | 2F ra rb imm | ra(7..0) := byte(rb + signed_ext(imm)), ra(31..8) := 0x000000 |
 | LF  | 30 fa ra imm | fa := long(ra + signed_ext(imm)) |
 | LI  | 31 ra ... imm| ra := signed_ext(imm) |
 | LIU | 32 ra ... imm| ra := unsigned_ext(imm) |
