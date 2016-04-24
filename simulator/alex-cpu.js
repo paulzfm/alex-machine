@@ -45,13 +45,13 @@ var
     };
   },
 
-  exeArithmeticR = function (op) {
+  exeBinR = function (op) {
     return function (args) {
       regs[args['ra']] = op(regs[args['rb']], regs[args['rc']]);
     };
   },
 
-  exeArithmeticI = function (op) {
+  exeBinI = function (op) {
     return function (args) {
       regs[args['ra']] = op(regs[args['rb']], args['imm']);
     };
@@ -84,7 +84,7 @@ var
   },
 
   opShl = function (a, b) {
-    assert(0 <= b && b <= 32);
+    // assert(0 <= b && b <= 32);
     return a << b;
   },
 
@@ -96,6 +96,10 @@ var
   opSlr = function (a, b) {
     assert(0 <= b && b <= 32);
     return a >>> b;
+  },
+
+  opOr = function (a, b) {
+    return a | b;
   },
 
   exeBranch = function (test) {
@@ -172,45 +176,44 @@ var
     0x00: executor(decodeRType, function () {
     }, cont),
 
-    0x01: executor(decodeRType, exeArithmeticR(opAdd), cont),
-    0x02: executor(decodeIType(signed_ext), exeArithmeticI(opAdd), cont),
-    0x03: executor(decodeIType(unsigned_ext), exeArithmeticI(opAdd), cont),
+    0x01: executor(decodeRType, exeBinR(opAdd), cont),
+    0x02: executor(decodeIType(signed_ext), exeBinI(opAdd), cont),
+    0x03: executor(decodeIType(unsigned_ext), exeBinI(opAdd), cont),
 
-    0x04: executor(decodeRType, exeArithmeticR(opSub), cont),
-    0x05: executor(decodeIType(signed_ext), exeArithmeticI(opSub), cont),
-    0x06: executor(decodeIType(unsigned_ext), exeArithmeticI(opSub), cont),
+    0x04: executor(decodeRType, exeBinR(opSub), cont),
+    0x05: executor(decodeIType(signed_ext), exeBinI(opSub), cont),
+    0x06: executor(decodeIType(unsigned_ext), exeBinI(opSub), cont),
 
-    0x07: executor(decodeRType, exeArithmeticR(opMul), cont),
-    0x08: executor(decodeIType(signed_ext), exeArithmeticI(opMul), cont),
-    0x09: executor(decodeIType(unsigned_ext), exeArithmeticI(opMul), cont),
+    0x07: executor(decodeRType, exeBinR(opMul), cont),
+    0x08: executor(decodeIType(signed_ext), exeBinI(opMul), cont),
+    0x09: executor(decodeIType(unsigned_ext), exeBinI(opMul), cont),
 
-    0x0A: executor(decodeRType, exeArithmeticR(opDiv), cont),
-    0x0B: executor(decodeIType(signed_ext), exeArithmeticI(opDiv), cont),
-    0x0C: executor(decodeIType(unsigned_ext), exeArithmeticI(opDiv), cont),
+    0x0A: executor(decodeRType, exeBinR(opDiv), cont),
+    0x0B: executor(decodeIType(signed_ext), exeBinI(opDiv), cont),
+    0x0C: executor(decodeIType(unsigned_ext), exeBinI(opDiv), cont),
 
-    0x0D: executor(decodeRType, exeArithmeticR(opMod), cont),
-    0x0E: executor(decodeIType(signed_ext), exeArithmeticI(opMod), cont),
-    0x0F: executor(decodeIType(unsigned_ext), exeArithmeticI(opMod), cont),
+    0x0D: executor(decodeRType, exeBinR(opMod), cont),
+    0x0E: executor(decodeIType(signed_ext), exeBinI(opMod), cont),
+    0x0F: executor(decodeIType(unsigned_ext), exeBinI(opMod), cont),
 
-    0x10: executor(decodeRType, exeArithmeticR(opShl), cont),
-    0x11: executor(decodeIType(unsigned_ext), exeArithmeticI(opShl), cont),
+    0x10: executor(decodeRType, exeBinR(opShl), cont),
+    0x11: executor(decodeIType(unsigned_ext), exeBinI(opShl), cont),
 
-    0x12: executor(decodeRType, exeArithmeticR(opSlr), cont),
-    0x13: executor(decodeIType(unsigned_ext), exeArithmeticI(opSlr), cont),
+    0x12: executor(decodeRType, exeBinR(opSlr), cont),
+    0x13: executor(decodeIType(unsigned_ext), exeBinI(opSlr), cont),
 
-    0x14: executor(decodeRType, exeArithmeticR(opSar), cont),
-    0x15: executor(decodeIType(unsigned_ext), exeArithmeticI(opSar), cont),
+    0x14: executor(decodeRType, exeBinR(opSar), cont),
+    0x15: executor(decodeIType(unsigned_ext), exeBinI(opSar), cont),
 
-    0x16: executor(decodeRType, exeLogicR(function (a, b) {
+    0x16: executor(decodeRType, exeBinR(function (a, b) {
       return a & b;
     }), cont),
-    0x17: executor(decodeRType, exeLogicR(function (a, b) {
-      return a | b;
-    }), cont),
-    0x18: executor(decodeRType, exeLogicR(function (a, b) {
+    0x17: executor(decodeRType, exeBinR(opOr), cont),
+    0x42: executor(decodeIType(unsigned_ext), exeBinI(opOr), cont),
+    0x18: executor(decodeRType, exeBinR(function (a, b) {
       return a ^ b;
     }), cont),
-    0x19: executor(decodeRType, exeLogicR(function (a, b) {
+    0x19: executor(decodeRType, exeBinR(function (a, b) {
       return ~a;
     }), cont),
     0x1A: executor(decodeRType, exeLogicR(function (a, b) {
@@ -302,18 +305,10 @@ var
     0xFF: function () {
       console.log('HALT');
     }
-  },
-
-  runInstruction = function (ins) {
-    var opcode = ins >>> 24;
-    (insTable[opcode])(ins);
   }
   ;
 
-// demo
-runInstruction(0x31100007); // LI 1, 7
-console.log(regs);
-runInstruction(0x31200008); // LI 2, 8
-console.log(regs);
-runInstruction(0x01312000); // ADD 3, 1, 2
-console.log(regs);
+exports.runInstruction = function (ins) {
+  var opcode = ins >>> 24;
+  (insTable[opcode])(ins);
+};
