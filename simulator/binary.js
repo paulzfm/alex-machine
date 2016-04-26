@@ -168,4 +168,16 @@ m.storeHalf = store(2);
 m.storeByte = store(1);
 m.storeFloat = store(8);
 
-exports = m;
+m.loadInt32 = function (val) {
+  var buf = new Buffer(4);
+  buf.writeInt32LE(val, 0, 4);
+  return buf;
+};
+
+m.loadUInt32 = function (val) {
+  var buf = new Buffer(4);
+  buf.writeUInt32LE(val, 0, 4);
+  return buf;
+};
+
+module.exports = m;

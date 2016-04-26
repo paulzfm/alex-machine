@@ -27,7 +27,7 @@ var
         'code': ins >>> 24,
         'ra': (ins >>> 20) & 0xF,
         'rb': (ins >>> 16) & 0xF,
-        'imm': extend(ins & 0xFF)
+        'imm': extend(ins & 0xFFFF)
       };
     };
   },
@@ -184,13 +184,15 @@ var
   }
   ;
 
-exports.runInstruction = function (ins) {
+var cpu = {};
+
+cpu.runInstruction = function (ins) {
   var opcode = ins >>> 24;
   (insTable[opcode])(ins);
 };
 
 // for testing
-exports.resetStatus = function (ins) {
+cpu.resetStatus = function () {
   regs = [];
   for (var i = 0; i < 16; i++) {
     regs.push(new Buffer(4));
@@ -203,15 +205,39 @@ exports.resetStatus = function (ins) {
   PC = 0;
 };
 
-exports.setRegisters = function (obj) {
+cpu.setRegisters = function (obj) {
   for (var i = 0; i < 16; i++) {
-    if (obj[i]) {
-      regs[i] = obj[i];
+    if (obj[i] != null) {
+      regs[i] = bin.loadInt32(obj[i]);
     }
   }
 };
 
-exports.setFRegisters = function (obj) {
+cpu.getRegisters = function (keys) {
+  var data = {};
+  keys.forEach(function (key) {
+    data[key] = regs[key].readInt32LE(0, 4);
+  });
+  return data;
+};
+
+cpu.setRegistersUnsigned = function (obj) {
+  for (var i = 0; i < 16; i++) {
+    if (obj[i] != null) {
+      regs[i] = bin.loadUInt32(obj[i]);
+    }
+  }
+};
+
+cpu.getRegistersUnsigned = function (keys) {
+  var data = {};
+  keys.forEach(function (key) {
+    data[key] = regs[key].readUInt32LE(0, 4);
+  });
+  return data;
+};
+
+cpu.setFRegisters = function (obj) {
   for (var i = 0; i < 16; i++) {
     if (obj[i]) {
       fregs[i] = obj[i];
@@ -219,7 +245,7 @@ exports.setFRegisters = function (obj) {
   }
 };
 
-exports.fetchStatus = function () {
+cpu.fetchStatus = function () {
   return {
     'regs': regs.slice(),
     'fregs': fregs.slice(),
@@ -227,3 +253,5 @@ exports.fetchStatus = function () {
     'pc': PC
   }
 };
+
+module.exports = cpu;
