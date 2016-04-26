@@ -52,59 +52,71 @@ F0~F15. All floating-point registers have 64 bits, i.e, they are represented in 
 +----------+--------+--------+-----------------+
 ```
 
+## Notations
+
+### Data Types
+
+| Notation | Type |
+| :------- | :--- |
+| int32 | 32-bit signed integer |
+| uint32 | 32-bit unsigned integer |
+| float | 64-bit double floating-point number |
+| int16 | 16-bit signed integer |
+| bool | either true or false |
+| bv | bit vector |
+
+### Predefined Variables
+
+| Notation | Type |
+| :------- | :--- |
+| ra, rb, rc or named registers | word |
+| fa, fb, fc | float |
+| imm | int16 |
+
+### Assignment Operator
+
+We use `r := e` to represent that the value of expression e is assigned to register r. Any register appears at the right hand side means the value of the register.
+
+### Predefined Operators
+
+| Notation | Infix? | Type Signature | Meaning |
+| :------: | :----: | :------------- | ------- |
+| + | Yes | int32 -> int32 -> int32 | add |
+| - | Yes | int32 -> int32 -> int32 | subtract |
+| * | Yes | int32 -> int32 -> int32 | multiply |
+| / | Yes | int32 -> int32 -> int32 | divide |
+| u/ | Yes | uint32 -> uint32 -> uint32 | divide for unsigned integers |
+| % | Yes | int32 -> int32 -> int32 | mod |
+| u% | Yes | uint32 -> uint32 -> uint32 | mod for unsigned integers |
+| << | Yes | uint32 -> uint32 -> uint32 | shift left |
+| >>> | Yes | uint32 -> uint32 -> uint32 | shift logically right |
+| >> | Yes | int32 -> uint32 -> int32 | shift arithmetic right |
+| and | Yes | uint32 -> uint32 -> uint32 | bitwise logical and |
+| or | Yes | uint32 -> uint32 -> uint32 | bitwise logical or |
+| xor | Yes | uint32 -> uint32 -> uint32 | bitwise logical xor |
+| not | No | uint32 -> uint32 | bitwise logical not |
+| = | Yes | int32 -> int32 -> bool | equal |
+| != | Yes | int32 -> int32 -> bool | not equal |
+| < | Yes | int32 -> int32 -> bool | less than |
+| u< | Yes | int32 -> int32 -> bool | less than for unsigned integers |
+| <= | Yes | int32 -> int32 -> bool | less than or equal |
+| u<= | Yes | int32 -> int32 -> bool | less than or equal for unsigned integers |
+| > | Yes | int32 -> int32 -> bool | greater than |
+| u> | Yes | int32 -> int32 -> bool | greater than for unsigned integers |
+| >= | Yes | int32 -> int32 -> bool | greater than or equal |
+| u>= | Yes | int32 -> int32 -> bool | greater than or equal for unsigned integers |
+| if <c> then <t> else <f> | No | bool * a * a -> a | if <c> is true, then the value is <t>, otherwise the value is <f> |
+| signed_ext | No | int16 -> int32 | signed extend 16-bit immediate integer |
+| unsigned_ext | No | int16 -> uint32 | unsigned extend 16-bit immediate integer |
+| offset | No | int16 -> int32 | offset extend 16-bit immediate integer, say offset(x) = signed_ext(x) << 2 |
+| ++ | Yes | bv -> bv -> bv | concatenate bit vectors |
+| r(h..l) | No | uint32 * uint32 -> bv | take bits indexed with range l to h from register r |
+| load(addr, b) | uint32 * uint32 -> uint32 | read b bytes from memory starting at address addr, treat these b bytes as the **lowest** b bytes and remain the highest (4 - b) bytes **zero** |
+| loadf(addr) | uint32 -> float | read 8 bytes as a float from memory starting at address addr |
+| store(addr, b, data) | uint32 * uint32 * uint32 -> () | write the **lowest** b bytes of data into memory starting at address addr |
+| storef(addr, data) | uint32 * float -> () | write the 8-byte-data into memory starting at address addr |
+
 ## Instructions
-
-### Notations
-<!-- TODO: update -->
-
-| Notation | Meaning |
-| :------- | :-------- |
-| \_ := \_ | assign value of the right operand to the left operand (a register or a memory space) |
-| \_ + \_ | add signed integers |
-| unsigned(\_) + unsigned(\_) | add unsigned integers |
-| \_ - \_ | subtract signed integers |
-| \_ * \_ | multiply signed integers |
-| unsigned(\_) * unsigned(\_) | multiply unsigned integers |
-| \_ / \_ | divide signed integers |
-| unsigned(\_) / unsigned(\_) | divide unsigned integers |
-| \_ % \_ | mod signed integers |
-| unsigned(\_) % unsigned(\_) | mod unsigned integers |
-| \_ and \_ | bitwise and unsigned integers |
-| \_ or \_ | bitwise or unsigned integers |
-| \_ xor \_ | bitwise xor unsigned integers |
-| not \_ | bitwise negate unsigned integer |
-| unsigned(\_) << unsigned(\_) | shift left unsigned integer, the second operand must be in range [0, 32] |
-| unsigned(\_) << unsigned(\_) | logically shift right unsigned integer, the second operand must be in range [0, 32] |
-| \_ >> \_ | arithmetically shift right signed integer, the second operand must be in range [0, 32] |
-| \_ = \_ | whether two integers are equal |
-| \_ != \_ | whether two integers are not equal |
-| \_ < \_ | whether the first signed integer is less than the second signed integer |
-| unsigned(\_) < unsigned(\_) | whether the first unsigned integer is less than the second unsigned integer |
-| \_ > \_ | whether the first signed integer is greater than the second signed integer |
-| unsigned(\_) > unsigned(\_) | whether the first unsigned integer is greater than the second unsigned integer |
-| \_ <= \_ | whether the first signed integer is less or equal than the second signed integer |
-| unsigned(\_) <= unsigned(\_) | whether the first unsigned integer is less or equal than the second unsigned integer |
-| \_ >= \_ | whether the first signed integer is greater or equal than the second signed integer |
-| unsigned(\_) >= unsigned(\_) | whether the first unsigned integer is greater or equal than the second unsigned integer |
-| \_ .+ \_ | add floating-point numbers |
-| \_ .- \_ | subtract floating-point numbers |
-| \_ .* \_ | multiply floating-point numbers |
-| \_ ./ \_ | divide floating-point numbers |
-| \_ .= \_ | whether two floating-point numbers are equal |
-| \_ .!= \_ | whether two floating-point numbers are not equal |
-| \_ .< \_ | whether the first floating-point numbers is less than the second floating-point numbers |
-| \_ .> \_ | whether the first floating-point numbers is greater than the second floating-point numbers |
-| \_ .<= \_ | whether the first floating-point numbers is less or equal than the second floating-point numbers |
-| \_ .>= \_ | whether the first floating-point numbers is greater or equal than the second floating-point numbers |
-| \_ .% \_ | mod floating-point numbers |
-| float(\_) | convert signed integer into floating-point number |
-| float(unsigned(\_)) | convert unsigned integer into floating-point number |
-| signed(\_) | convert floating-point number into signed number |
-| word(\_) | 32 bits from the starting memory address |
-| half(\_) | 16 bits from the starting memory address |
-| byte(\_) | 8 bits from the starting memory address |
-| offset(\_) | shift left the immediate integer and then do signed extension |
-|
 
 ### Instruction Control
 
@@ -128,30 +140,32 @@ F0~F15. All floating-point registers have 64 bits, i.e, they are represented in 
 | DIV  | 0A ra rb rc | ra := rb / rc |
 | DIVI | 0B ra rb imm| ra := rb / signed_ext(imm) |
 | DIVIU| 0C ra rb imm| ra := rb / unsigned_ext(imm) |
+| DIVU | 43 ra rb rc | ra := rb u/ rc |
 | MOD  | 0D ra rb rc | ra := rb % rc |
 | MODI | 0E ra rb imm| ra := rb % signed_ext(imm) |
 | MODIU| 0F ra rb imm| ra := rb % unsigned_ext(imm) |
-| SHL  | 10 ra rb rc | ra := unsigned(rb) << unsigned(rc) |
-| SHLI | 11 ra rb imm| ra := unsigned(rb) << unsigned(imm) |
-| SLR  | 12 ra rb rc | ra := unsigned(rb) >> unsigned(rc) |
-| SLRI | 13 ra rb imm| ra := unsigned(rb) >> unsigned(imm) |
+| MODU | 44 ra rb rc | ra := rb u% rc |
+| SHL  | 10 ra rb rc | ra := rb << rc |
+| SHLI | 11 ra rb imm| ra := rb << imm |
+| SLR  | 12 ra rb rc | ra := rb >>> rc |
+| SLRI | 13 ra rb imm| ra := rb >>> imm |
 | SAR  | 14 ra rb rc | ra := rb >> rc |
 | SARI | 15 ra rb imm| ra := rb >> imm |
 | AND  | 16 ra rb rc | ra := rb and rc |
 | OR   | 17 ra rb rc | ra := rb or rc |
 | ORI  | 42 ra rb imm| ra := rb or unsigned_ext(imm) |
 | XOR  | 18 ra rb rc | ra := rb xor rc |
-| NOT  | 19 ra rb ...| ra := not rb |
+| NOT  | 19 ra rb ...| ra := not(rb) |
 | EQ   | 1A ra rb rc | ra := if rb = rc then 1 else 0 |
 | NE   | 1B ra rb rc | ra := if rb != rc then 1 else 0 |
 | LT   | 1C ra rb rc | ra := if rb < rc then 1 else 0 |
-| LTU  | 1D ra rb rc | ra := if unsigned(rb) < unsigned(rc) then 1 else 0 |
+| LTU  | 1D ra rb rc | ra := if rb u< rc then 1 else 0 |
 | GT   | 1E ra rb rc | ra := if rb > rc then 1 else 0 |
-| GTU  | 1F ra rb rc | ra := if unsigned(rb) > unsigned(rc) then 1 else 0 |
+| GTU  | 1F ra rb rc | ra := if rb u> rc then 1 else 0 |
 | LE   | 20 ra rb rc | ra := if rb <= rc then 1 else 0 |
-| LEU  | 21 ra rb rc | ra := if unsigned(rb) <= unsigned(rc) then 1 else 0 |
+| LEU  | 21 ra rb rc | ra := if rb u<= rc then 1 else 0 |
 | GE   | 22 ra rb rc | ra := if rb >= rc then 1 else 0 |
-| GEU  | 23 ra rb rc | ra := if unsigned(rb) >= unsigned(rc) then 1 else 0 |
+| GEU  | 23 ra rb rc | ra := if rb u>= rc then 1 else 0 |
 
 ### Branch/Jump
 
@@ -165,24 +179,24 @@ F0~F15. All floating-point registers have 64 bits, i.e, they are represented in 
 | BGT  | 28 ra rb imm   | if ra > rb then PC := PC + offset(imm) |
 | J    | 29 imm(24 bits)| PC := PC(31..26) ++ imm ++ 00 |
 | JR   | 2A ra ... ...  | PC := ra |
-| CALL | 2B ra ... ...  | word(SP - 4) := PC + 4, SP := SP - 4, PC := ra |
-| RET  | 2C ... ... ... | _ := word(SP), SP := SP + 4, PC := _ |
+| CALL | 2B ra ... ...  | store(SP - 4, 4, PC + 4), SP := SP - 4, PC := ra |
+| RET  | 2C ... ... ... | _ := load(SP, 4), SP := SP + 4, PC := _ |
 
 ### Load/Store
 
 | Name | Machine Code | Meaning |
 | :--- | :----------- | :-------- |
-| LW  | 2D ra rb imm | ra := word(rb + signed_ext(imm)) |
-| LH  | 2E ra rb imm | ra(15..0) := half(rb + signed_ext(imm)), ra(31..16) := 0x0000 |
-| LB  | 2F ra rb imm | ra(7..0) := byte(rb + signed_ext(imm)), ra(31..8) := 0x000000 |
-| LF  | 30 fa ra imm | fa := long(ra + signed_ext(imm)) |
+| LW  | 2D ra rb imm | ra := load(rb + signed_ext(imm), 4) |
+| LH  | 2E ra rb imm | ra := load(rb + signed_ext(imm), 2) |
+| LB  | 2F ra rb imm | ra := load(rb + signed_ext(imm), 1) |
+| LF  | 30 fa ra imm | fa := loadf(ra + signed_ext(imm)) |
 | LI  | 31 ra ... imm| ra := signed_ext(imm) |
 | LIU | 32 ra ... imm| ra := unsigned_ext(imm) |
 | LIH | 33 ra ... imm| ra := unsigned_ext(imm) << 16 |
-| SW  | 34 ra rb imm | word(rb + signed_ext(imm)) := ra |
-| SH  | 35 ra rb imm | half(rb + signed_ext(imm)) := ra(15..0) |
-| SB  | 36 ra rb imm | byte(rb + signed_ext(imm)) := ra(7..0) |
-| SF  | 37 ra fa imm | long(ra + signed_ext(imm)) := fa |
+| SW  | 34 ra rb imm | store(rb + signed_ext(imm), 4, ra) |
+| SH  | 35 ra rb imm | store(rb + signed_ext(imm), 2, ra) |
+| SB  | 36 ra rb imm | store(rb + signed_ext(imm), 1, ra) |
+| SF  | 37 ra fa imm | storef(ra + signed_ext(imm), fa) |
 
 ### Stack
 
