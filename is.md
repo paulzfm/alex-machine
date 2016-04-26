@@ -111,10 +111,10 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | offset | No | int16 -> int32 | offset extend 16-bit immediate integer, say offset(x) = signed_ext(x) << 2 |
 | ++ | Yes | bv -> bv -> bv | concatenate bit vectors |
 | r(h..l) | No | uint32 * uint32 -> bv | take bits indexed with range l to h from register r |
-| load(addr, b) | uint32 * uint32 -> uint32 | read b bytes from memory starting at address addr, treat these b bytes as the **lowest** b bytes and remain the highest (4 - b) bytes **zero** |
-| loadf(addr) | uint32 -> float | read 8 bytes as a float from memory starting at address addr |
-| store(addr, b, data) | uint32 * uint32 * uint32 -> () | write the **lowest** b bytes of data into memory starting at address addr |
-| storef(addr, data) | uint32 * float -> () | write the 8-byte-data into memory starting at address addr |
+| load(addr, b) | No | uint32 * uint32 -> uint32 | read b bytes from memory starting at address addr, treat these b bytes as the **lowest** b bytes and remain the highest (4 - b) bytes **zero** |
+| loadf(addr) | No | uint32 -> float | read 8 bytes as a float from memory starting at address addr |
+| store(addr, b, data) | No | uint32 * uint32 * uint32 -> () | write the **lowest** b bytes of data into memory starting at address addr |
+| storef(addr, data) | No | uint32 * float -> () | write the 8-byte-data into memory starting at address addr |
 
 ## Instructions
 
