@@ -1,7 +1,7 @@
 var bin = require('./binary');
 
 var
-  PC = 0,
+  PC = new Buffer(4),
   regs = [],
   FP = 11,
   SP = 12,
@@ -46,10 +46,12 @@ var
 
   exeBranch = function (test) {
     return function (args) {
-      if (test(regs[args['ra']], regs[args['rb']])) {
-        return PC + args['imm'];
+      var buf = test(regs[args['ra']], regs[args['rb']]);
+      var value = buf.readInt32LE(0, 4);
+      if (value == 1) {
+        return bin.add32(PC, args['imm']);
       } else {
-        return PC + 4;
+        return bin.add32(PC, bin.four32);
       }
     };
   },
@@ -71,7 +73,7 @@ var
   },
 
   cont = function () {
-    PC += 4;
+    PC = bin.add32(PC, bin.four32);
   },
 
   executor = function (decode, exe, next) {
@@ -131,9 +133,7 @@ var
     0x22: executor(decodeRType, exeBinR(bin.ge32), cont),
     0x23: executor(decodeRType, exeBinR(bin.geu32), cont),
 
-    0x24: executor(decodeIType(bin.oext32), exeBranch(function () {
-      return true;
-    }), jmp),
+    0x24: executor(decodeIType(bin.oext32), exeBranch(bin.true32), jmp),
     0x25: executor(decodeIType(bin.oext32), exeBranch(bin.eq32), jmp),
     0x26: executor(decodeIType(bin.oext32), exeBranch(bin.ne32), jmp),
     0x27: executor(decodeIType(bin.oext32), exeBranch(bin.lt32), jmp),
@@ -189,6 +189,7 @@ var
 var cpu = {};
 
 cpu.runInstruction = function (ins) {
+  //console.log('running ' + ins);
   var opcode = ins >>> 24;
   (insTable[opcode])(ins);
 };
@@ -204,7 +205,7 @@ cpu.resetStatus = function () {
     fregs.push(new Buffer(8));
   }
   mem = {};
-  PC = 0;
+  PC.writeUInt32LE(0, 0, 4);
 };
 
 cpu.setRegisters = function (obj) {
@@ -245,6 +246,10 @@ cpu.setFRegisters = function (obj) {
       fregs[i] = obj[i];
     }
   }
+};
+
+cpu.getPC = function () {
+  return PC.readUInt32LE(0, 4);
 };
 
 cpu.fetchStatus = function () {

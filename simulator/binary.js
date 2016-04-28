@@ -26,6 +26,9 @@ var uint32 = function (op) {
   };
 };
 
+m.four32 = new Buffer(4);
+m.four32.writeInt32LE(4, 0, 4);
+
 // Number -> Buffer
 m.ext32 = function (imm) {
   var a = new Buffer(2);
@@ -65,7 +68,7 @@ m.div32 = int32(function (a, b) {
 });
 
 m.divu32 = uint32(function (a, b) {
-  return (a / b) % 0xFFFFFFFF;
+  return (Math.floor(a / b)) % 0xFFFFFFFF;
 });
 
 m.mod32 = int32(function (a, b) {
@@ -142,6 +145,14 @@ m.ge32 = int32(function (a, b) {
 
 m.geu32 = uint32(function (a, b) {
   return (a >= b) ? 1 : 0;
+});
+
+m.true32 = int32(function () {
+  return 1;
+});
+
+m.false32 = int32(function () {
+  return 0;
 });
 
 // Number -> Number -> Function

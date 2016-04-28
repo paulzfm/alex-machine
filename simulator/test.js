@@ -24,6 +24,19 @@ var checkArithI = function (op, ra, rb, imm) {
   };
 };
 
+var checkBranch = function (op, ra, rb, jump) {
+  return function () {
+    cpu.setRegisters({
+      1: ra,
+      2: rb
+    });
+    var oldPC = cpu.getPC();
+    cpu.runInstruction((op << 24) | 0x12FFFF);
+    var expectedPC = oldPC + (jump ? -4 : 4);
+    assert.equal(cpu.getPC(), expectedPC);
+  };
+};
+
 cpu.resetStatus();
 
 describe('Alex CPU', function() {
@@ -43,10 +56,12 @@ describe('Alex CPU', function() {
     it('check DIV', checkArithR(0x0A, -1, 1, -2));
     it('check DIVI', checkArithI(0x0B, -2, 2, 0xFFFF));
     it('check DIVIU', checkArithI(0x0C, 0, 2, 0xFFFF));
+    it('check DIVU', checkArithR(0x43, 2147483647, -1, 2));
 
     it('check MOD', checkArithR(0x0D, 1, 5, 2));
     it('check MODI', checkArithI(0x0E, 0, 2, 0xFFFF));
     it('check MODIU', checkArithI(0x0F, 2, 2, 0xFFFF));
+    it('check MODU', checkArithR(0x44, 0, -1, 3));
 
     it('check SHL', checkArithR(0x10, -16777216, 0xFF00, 16));
     it('check SHLI', checkArithI(0x11, -16777216, 0xFF00, 16));
@@ -71,6 +86,17 @@ describe('Alex CPU', function() {
     it('check LEU', checkArithR(0x21, 0, -1, 1));
     it('check GE', checkArithR(0x22, 0, -1, 1));
     it('check GEU', checkArithR(0x23, 1, -1, 1));
+  });
 
+  describe('Branch', function () {
+    it('check B', checkBranch(0x24, 0, 0, true));
+    it('check BEQ jump', checkBranch(0x25, 1, 1, true));
+    it('check BEQ not jump', checkBranch(0x25, 1, 0, false));
+    it('check BNE jump', checkBranch(0x26, 1, 0, true));
+    it('check BNE not jump', checkBranch(0x26, 1, 1, false));
+    it('check BLT jump', checkBranch(0x27, 0, 1, true));
+    it('check BLT not jump', checkBranch(0x27, 0, 0, false));
+    it('check BGT jump', checkBranch(0x28, 1, 0, true));
+    it('check BGT not jump', checkBranch(0x28, 0, 0, false));
   });
 });
