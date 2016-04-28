@@ -26,8 +26,13 @@ var uint32 = function (op) {
   };
 };
 
-m.four32 = new Buffer(4);
-m.four32.writeInt32LE(4, 0, 4);
+m.int32Buf = function (num) {
+  var buf = new Buffer(4);
+  buf.writeInt32LE(num, 0, 4);
+  return buf;
+};
+
+m.four32 = m.int32Buf(4);
 
 // Number -> Buffer
 m.ext32 = function (imm) {

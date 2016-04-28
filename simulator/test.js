@@ -160,7 +160,13 @@ describe('Alex CPU', function() {
 
   describe('Load/Store', function () {
     it('check LW and SW', checkLoadStore(0x34, 0x2D, -1, 4));
-    it('check LH and SH', checkLoadStore(0x35, 0x2E, -1, 2));
-    it('check LB and SB', checkLoadStore(0x36, 0x2F, -1, 1));
+    it('check LH and SH', checkLoadStore(0x35, 0x2E, -2, 2));
+    it('check LB and SB', checkLoadStore(0x36, 0x2F, -3, 1));
+  });
+
+  describe('Load Imm', function () {
+    it('check LI', checkLoadImm(0x31, -1, 0xFFFF));
+    it('check LIU', checkLoadImm(0x32, 0xFFFF, 0xFFFF));
+    it('check LIH', checkLoadImm(0x33, -65536, 0xFFFF));
   });
 });
