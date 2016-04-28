@@ -105,16 +105,32 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | u> | Yes | int32 -> int32 -> bool | greater than for unsigned integers |
 | >= | Yes | int32 -> int32 -> bool | greater than or equal |
 | u>= | Yes | int32 -> int32 -> bool | greater than or equal for unsigned integers |
-| if <c> then <t> else <f> | No | bool * a * a -> a | if <c> is true, then the value is <t>, otherwise the value is <f> |
-| signed_ext | No | int16 -> int32 | signed extend 16-bit immediate integer |
-| unsigned_ext | No | int16 -> uint32 | unsigned extend 16-bit immediate integer |
-| offset | No | int16 -> int32 | offset extend 16-bit immediate integer, say offset(x) = signed_ext(x) << 2 |
+| if _c_ then _t_ else _f_ | No | bool * a * a -> a | if _c_ is true, then the value is _t_, otherwise the value is _f_ |
+| signed_ext(_x_) | No | int16 -> int32 | signed extend 16-bit immediate integer _x_ |
+| unsigned_ext(_x_) | No | int16 -> uint32 | unsigned extend 16-bit immediate integer _x_ |
+| offset(_x_) | No | int16 -> int32 | offset extend 16-bit immediate integer _x_, say offset(_x_) = signed_ext(_x_) << 2 |
 | ++ | Yes | bv -> bv -> bv | concatenate bit vectors |
-| r(h..l) | No | uint32 * uint32 -> bv | take bits indexed with range l to h from register r |
-| load(addr, b) | No | uint32 * uint32 -> uint32 | read b bytes from memory starting at address addr, treat these b bytes as the **lowest** b bytes and remain the highest (4 - b) bytes **zero** |
-| loadf(addr) | No | uint32 -> float | read 8 bytes as a float from memory starting at address addr |
-| store(addr, b, data) | No | uint32 * uint32 * uint32 -> () | write the **lowest** b bytes of data into memory starting at address addr |
-| storef(addr, data) | No | uint32 * float -> () | write the 8-byte-data into memory starting at address addr |
+| _r_(_h_.._l_) | No | uint32 * uint32 -> bv | take bits indexed with range _l_ to _h_ from register _r_ |
+| load(_addr_, _b_) | No | uint32 * uint32 -> uint32 | read _b_ bytes from memory starting at address _addr_, treat these _b_ bytes as the **lowest** _b_ bytes and remain the highest (4 - _b_) bytes **zero** |
+| loadf(_addr_) | No | uint32 -> float | read 8 bytes as a float from memory starting at address _addr_ |
+| store(_addr_, _b_, _data_) | No | uint32 * uint32 * uint32 -> () | write the **lowest** _b_ bytes of _data_ into memory starting at address _addr_ |
+| storef(_addr_, _data_) | No | uint32 * float -> () | write the 8-byte _data_ into memory starting at address _addr_ |
+| tofloat(_x_) | No | int32 -> float | convert a signed integer _x_ into float |
+| utofloat(_x_) | No | uint32 -> float | convert an unsigned integer _x_ into float |
+| toint(_x_) | No | float -> int32 | convert a float range from -2147483648 to 2147483647 into signed integer |
+| .+ | Yes | float -> float -> float | add |
+| .- | Yes | float -> float -> float | subtract |
+| .* | Yes | float -> float -> float | multiply |
+| ./ | Yes | float -> float -> float | divide |
+| .% | Yes | float -> float -> float | mod |
+| .= | Yes | float -> float -> bool | equal |
+| .!= | Yes | float -> float -> bool | not equal |
+| .< | Yes | float -> float -> bool | less than |
+| .<= | Yes | float -> float -> bool | less than or equal |
+| .> | Yes | float -> float -> bool | greater than |
+| .>= | Yes | float -> float -> bool | greater than or equal |
+| floor(_x_) | No | float -> float | the maximum integer value less or equal than _x_ |
+| ceil(_x_) | No | float -> float | the minimal integer value greater or equal than _x_ |
 
 ## Instructions
 
@@ -179,8 +195,8 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | BGT  | 28 ra rb imm   | if ra > rb then PC := PC + offset(imm) |
 | J    | 29 imm(24 bits)| PC := PC(31..26) ++ imm ++ 00 |
 | JR   | 2A ra ... ...  | PC := ra |
-| CALL | 2B ra ... ...  | store(SP - 4, 4, PC + 4), SP := SP - 4, PC := ra |
-| RET  | 2C ... ... ... | _ := load(SP, 4), SP := SP + 4, PC := _ |
+| CALL | 2B ra ... ...  | SP := SP - 4, store(SP, 4, PC + 4), PC := ra |
+| RET  | 2C ... ... ... | x := load(SP, 4), SP := SP + 4, PC := x |
 
 ### Load/Store
 
@@ -202,68 +218,55 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 
 | Name | Machine Code | Meaning |
 | :--- | :----------- | :-------- |
-| POPW | 38 ra ... ... ||
-| POPH | 39 ra ... ... ||
-| POPB | 3A ra ... ... ||
-| POPF | 3B fa ... ... ||
-| POPA | 3C ra ... ... ||
-| PSHW | 3D ra ... ... ||
-| PSHH | 3E ra ... ... ||
-| PSHB | 3F ra ... ... ||
-| PSHF | 40 fa ... ... ||
-| PSHA | 41 ra ... ... ||
+| POPW | 38 ra ... ... | ra := load(SP, 4), SP := SP + 4 |
+| POPH | 39 ra ... ... | ra := load(SP, 2), SP := SP + 2 |
+| POPB | 3A ra ... ... | ra := load(SP, 1), SP := SP + 1 |
+| POPF | 3B fa ... ... | fa := loadf(SP), SP := SP + 8 |
+| POPA | 3C ra ... ... | ra := load(SP, 4), SP := SP + 8 |
+| PSHW | 3D ra ... ... | SP := SP - 4, store(SP, 4, ra) |
+| PSHH | 3E ra ... ... | SP := SP - 2, store(SP, 2, ra) |
+| PSHB | 3F ra ... ... | SP := SP - 1, store(SP, 1, ra) |
+| PSHF | 40 fa ... ... | SP := SP - 8, storef(SP, fa) |
+| PSHA | 41 ra ... ... | SP := SP - 8, store(SP, 4, ra) |
+
+### Conversion
+
+| Name | Machine Code | Meaning |
+| :--- | :----------- | :------ |
+| CIF | 45 fa ra ... ... | fa := tofloat(ra) |
+| CUF | 46 fa ra ... ... | fa := utofloat(ra) |
+| CFI | 47 ra fa ... ... | ra := toint(floor(fa)) |
 
 ### Floating-point
 
 | Name | Machine Code | Meaning |
 | :----- | :----------- | :-------- |
-| ADDF | 0110011 fa fb fc ... | fa := fb .+ fc |
-| SUBF | 0110100 fa fb fc ... | fa := fb .- fc |
-| MULF | 0110101 fa fb fc ... | fa := fb .* fc |
-| DIVF | 0110110 fa fb fc ... | fa := fb ./ fc |
-| EQF  | 0110111 fa fb fc ... | fa := if fb .= fc then 1 else 0 |
-| NEF  | 0111000 fa fb fc ... | fa := if fb .!= fc then 1 else 0 |
-| LTF  | 0111001 fa fb fc ... | fa := fb .< fc |
-| GTF  | 0111010 fa fb fc ... | fa := fb .> fc |
-| LEF  | 0111011 fa fb fc ... | fa := fb .<= fc |
-| GTF  | 0111100 fa fb fc ... | fa := fb .>= fc |
-| POW  | 0111101 fa fb fc ... | fa := pow(fb, fc) |
-| FABS | 0111110 fa fb ... ... | fa := fabs(fb) |
-| LOG  | 0111111 fa fb ... ... | fa := log(fb) |
-| LOGT | 1000000 fa fb ... ... | fa := log10(fb) |
-| EXP  | 1000001 fa fb ... ... | fa := exp(fb) |
-| FLOR | 1000010 fa fb ... ... | fa := floor(fb) |
-| CEIL | 1000011 fa fb ... ... | fa := ceil(fb) |
-| SIN  | 1000100 fa fb ... ... | fa := sin(fb) |
-| COS  | 1000101 fa fb ... ... | fa := cos(fb) |
-| TAN  | 1000110 fa fb ... ... | fa := tan(fb) |
-| ASIN | 1000111 fa fb ... ... | fa := asin(fb) |
-| ACOS | 1001000 fa fb ... ... | fa := acos(fb) |
-| ATAN | 1001001 fa fb ... ... | fa := arctan(fb) |
-| SQRT | 1001010 fa fb ... ... | fa := sqrt(fb) |
-| FMOD | 1001011 fa fb fc ... | fa := fb .% fc |
-
-### Conversion
-
-| Name | Machine Code | Meaning |
-| :----- | :----------- | :-------- |
-| CIF | 1001100 fa ra ... ... | fa := float(ra) |
-| CUF | 1001101 fa ra ... ... | fa := float(unsigned(ra)) |
-| CFI | 1001110 ra fa ... ... | ra := signed(fa) |
-| CFU | 1001111 ra fa ... ... | ra := signed(fabs(fa)) |
+| ADDF | 48 fa fb fc ... | fa := fb .+ fc |
+| SUBF | 49 fa fb fc ... | fa := fb .- fc |
+| MULF | 4A fa fb fc ... | fa := fb .* fc |
+| DIVF | 4B fa fb fc ... | fa := fb ./ fc |
+| MODF | 4C fa fb fc ... | fa := fb .% fc |
+| EQF  | 4D ra fb fc ... | ra := if fb .= fc then 1 else 0 |
+| NEF  | 4E ra fb fc ... | ra := if fb .!= fc then 1 else 0 |
+| LTF  | 4F ra fb fc ... | ra := fb .< fc |
+| GTF  | 50 ra fb fc ... | ra := fb .> fc |
+| LEF  | 51 ra fb fc ... | ra := fb .<= fc |
+| GTF  | 52 ra fb fc ... | ra := fb .>= fc |
+| FLOR | 53 fa fb ... ... | fa := floor(fb) |
+| CEIL | 54 fa fb ... ... | fa := ceil(fb) |
 
 ### System
 
 | Name | Machine Code | Meaning |
 | :----- | :----------- | :-------- |
+| BIN  | 80 ra rb ... ... | rb := getchar(ra) |
+| BOUT | 81 ra rb ... ... | putchar(ra, rb) |
 | IDLE | 1111111 000 ... ... ... | response hardware interrupt (include timer) |
 | CLI  | 1111111 001 001 rc ... | clear interrupt (rc := IENA, IENA := 0) |
 | STI  | 1111111 001 010 ... ... | set interrupt (IENA := 1) |
 | LUSP | 1111111 010 001 rc ... | rc := USP |
 | SUSP | 1111111 010 010 rc ... | USP := rc |
 | IRET | 1111111 011 ... ... ... | return from interrupt |
-| BIN  | 1111111 100 001 rc ... | rc := getchar() |
-| BOUT | 1111111 100 010 rc ... | putchar(rc) |
 | TRAP | 1111111 110 ... ... ... | trap |
 | STIV | 1111111 111 000 rc ... | IVEC := rc |
 | STPD | 1111111 111 001 rc ... | PDIR := rc |
