@@ -99,10 +99,12 @@ var
     0x0A: executor(decodeRType, exeBinR(bin.div32), cont),
     0x0B: executor(decodeIType(bin.ext32), exeBinI(bin.div32), cont),
     0x0C: executor(decodeIType(bin.uext32), exeBinI(bin.div32), cont),
+    0x43: executor(decodeRType, exeBinR(bin.divu32), cont),
 
     0x0D: executor(decodeRType, exeBinR(bin.mod32), cont),
     0x0E: executor(decodeIType(bin.ext32), exeBinI(bin.mod32), cont),
     0x0F: executor(decodeIType(bin.uext32), exeBinI(bin.mod32), cont),
+    0x44: executor(decodeRType, exeBinR(bin.modu32), cont),
 
     0x10: executor(decodeRType, exeBinR(bin.shl32), cont),
     0x11: executor(decodeIType(bin.uext32), exeBinI(bin.shl32), cont),

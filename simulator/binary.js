@@ -64,8 +64,16 @@ m.div32 = int32(function (a, b) {
   return (Math.floor(a / b)) << 0;
 });
 
+m.divu32 = uint32(function (a, b) {
+  return (a / b) % 0xFFFFFFFF;
+});
+
 m.mod32 = int32(function (a, b) {
   return (a % b) << 0;
+});
+
+m.modu32 = uint32(function (a, b) {
+  return a % b;
 });
 
 m.and32 = int32(function (a, b) {
