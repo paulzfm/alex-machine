@@ -26,6 +26,32 @@ var uint32 = function (op) {
   };
 };
 
+// (Number -> Number -> Number) -> Function
+var float = function (op) {
+  // Buffer -> Buffer -> Buffer
+  return function (a, b) {
+    var num1 = a.readDoubleLE();
+    var num2 = b.readDoubleLE();
+    var num3 = op(num1, num2);
+    var c = new Buffer(8);
+    c.writeDoubleLE(num3);
+    return c;
+  };
+};
+
+// (Number -> Number -> Bool) -> Function
+var floatCmp = function (op) {
+  // Buffer -> Buffer -> Buffer
+  return function (a, b) {
+    var num1 = a.readDoubleLE();
+    var num2 = b.readDoubleLE();
+    var num3 = op(num1, num2) ? 1 : 0;
+    var c = new Buffer(4);
+    c.writeInt32LE(num3);
+    return c;
+  };
+};
+
 m.int32Buf = function (num) {
   var buf = new Buffer(4);
   buf.writeInt32LE(num, 0, 4);
@@ -160,6 +186,58 @@ m.false32 = int32(function () {
   return 0;
 });
 
+m.addFloat = float(function (a, b) {
+  return a + b;
+});
+
+m.subFloat = float(function (a, b) {
+  return a - b;
+});
+
+m.mulFloat = float(function (a, b) {
+  return a * b;
+});
+
+m.divFloat = float(function (a, b) {
+  return a / b;
+});
+
+m.modFloat = float(function (a, b) {
+  return a % b;
+});
+
+m.eqFloat = floatCmp(function (a, b) {
+  return a == b;
+});
+
+m.neFloat = floatCmp(function (a, b) {
+  return a != b;
+});
+
+m.ltFloat = floatCmp(function (a, b) {
+  return a < b;
+});
+
+m.gtFloat = floatCmp(function (a, b) {
+  return a > b;
+});
+
+m.leFloat = floatCmp(function (a, b) {
+  return a <= b;
+});
+
+m.geFloat = floatCmp(function (a, b) {
+  return a >= b;
+});
+
+m.floorFloat = float(function (a) {
+  return Math.floor(a);
+});
+
+m.ceilFloat = float(function (a) {
+  return Math.ceil(a);
+});
+
 // Number -> Number -> Function
 var load = function (size, bytes) {
   // Number -> Object -> Buffer
@@ -168,7 +246,7 @@ var load = function (size, bytes) {
     if (size == 4) {
       buf.writeInt32LE(0, 0, 4);
     } else {
-      buf.writeInt64LE(0, 0, 8);
+      buf.writeDoubleLE(0);
     }
     for (var i = 0; i < bytes; i++) {
       buf[i] = mem[addr + i][0];

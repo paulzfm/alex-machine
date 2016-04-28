@@ -84,6 +84,18 @@ var
     };
   },
 
+  exeFloat = function (op) {
+    return function (args) {
+      fregs[args['ra']] = op(fregs[args['rb']], fregs[args['rc']]);
+    };
+  },
+
+  exeFloatCmp = function (op) {
+    return function (args) {
+      regs[args['ra']] = op(fregs[args['rb']], fregs[args['rc']]);
+    };
+  },
+
   jmp = function (nextPC) {
     PC = nextPC;
   },
@@ -186,6 +198,7 @@ var
     0x2D: executor(decodeIType(bin.ext32), exeLoad(bin.loadWord), cont),
     0x2E: executor(decodeIType(bin.ext32), exeLoad(bin.loadHalf), cont),
     0x2F: executor(decodeIType(bin.ext32), exeLoad(bin.loadByte), cont),
+    0x30: executor(decodeIType(bin.ext32), exeLoad(bin.loadFloat), cont),
 
     0x31: executor(decodeIType(bin.ext32), function (args) {
       regs[args['ra']] = args['imm'];
@@ -200,16 +213,48 @@ var
     0x34: executor(decodeIType(bin.ext32), exeStore(bin.storeWord), cont),
     0x35: executor(decodeIType(bin.ext32), exeStore(bin.storeHalf), cont),
     0x36: executor(decodeIType(bin.ext32), exeStore(bin.storeByte), cont),
+    0x37: executor(decodeIType(bin.ext32), exeStore(bin.storeFloat), cont),
 
     0x38: executor(decodeRType, exePop(bin.loadWord, 4), cont),
     0x39: executor(decodeRType, exePop(bin.loadHalf, 2), cont),
     0x3A: executor(decodeRType, exePop(bin.loadByte, 1), cont),
+    0x3B: executor(decodeRType, exePop(bin.loadFloat, 8), cont),
     0x3C: executor(decodeRType, exePop(bin.loadWord, 8), cont),
 
     0x3D: executor(decodeRType, exePush(bin.storeWord, 4), cont),
     0x3E: executor(decodeRType, exePush(bin.storeHalf, 2), cont),
     0x3F: executor(decodeRType, exePush(bin.storeByte, 1), cont),
+    0x40: executor(decodeRType, exePush(bin.storeFloat, 8), cont),
     0x41: executor(decodeRType, exePush(bin.storeWord, 8), cont),
+
+    0x45: executor(decodeRType, function (args) {
+      var val = regs[args['rb']].readInt32LE(0, 4);
+      fregs[args['ra']].writeDoubleLE(val);
+    }, cont),
+    0x46: executor(decodeRType, function (args) {
+      var val = regs[args['rb']].readUInt32LE(0, 4);
+      fregs[args['ra']].writeDoubleLE(val);
+    }, cont),
+    0x47: executor(decodeRType, function (args) {
+      var val = fregs[args['rb']].readDoubleLE();
+      regs[args['ra']].writeInt32LE(0, 4, Math.floor(val));
+    }, cont),
+
+    0x48: executor(decodeRType, exeFloat(bin.addFloat), cont),
+    0x49: executor(decodeRType, exeFloat(bin.subFloat), cont),
+    0x4A: executor(decodeRType, exeFloat(bin.mulFloat), cont),
+    0x4B: executor(decodeRType, exeFloat(bin.divFloat), cont),
+    0x4C: executor(decodeRType, exeFloat(bin.modFloat), cont),
+
+    0x4D: executor(decodeRType, exeFloatCmp(bin.eqFloat), cont),
+    0x4E: executor(decodeRType, exeFloatCmp(bin.neFloat), cont),
+    0x4F: executor(decodeRType, exeFloatCmp(bin.ltFloat), cont),
+    0x50: executor(decodeRType, exeFloatCmp(bin.gtFloat), cont),
+    0x51: executor(decodeRType, exeFloatCmp(bin.leFloat), cont),
+    0x52: executor(decodeRType, exeFloatCmp(bin.geFloat), cont),
+
+    0x53: executor(decodeRType, exeFloat(bin.floorFloat), cont),
+    0x54: executor(decodeRType, exeFloat(bin.ceilFloat), cont),
 
     0xFF: function () {
       console.log('HALT');

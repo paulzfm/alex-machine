@@ -233,9 +233,9 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 
 | Name | Machine Code | Meaning |
 | :--- | :----------- | :------ |
-| CIF | 45 fa ra ... ... | fa := tofloat(ra) |
-| CUF | 46 fa ra ... ... | fa := utofloat(ra) |
-| CFI | 47 ra fa ... ... | ra := toint(floor(fa)) |
+| CIF | 45 fa rb ... ... | fa := tofloat(rb) |
+| CUF | 46 fa rb ... ... | fa := utofloat(rb) |
+| CFI | 47 ra fb ... ... | ra := toint(floor(fb)) |
 
 ### Floating-point
 
