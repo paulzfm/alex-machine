@@ -70,6 +70,20 @@ var
     };
   },
 
+  exePop = function (loader, bytes) {
+    return function (args) {
+      regs[args['ra']] = loader(cpu.getRegister(SP), mem);
+      regs[SP] = bin.add32(regs[SP], bin.int32Buf(bytes));
+    };
+  },
+
+  exePush = function (saver, bytes) {
+    return function (args) {
+      regs[SP] = bin.sub32(regs[SP], bin.int32Buf(bytes));
+      saver(cpu.getRegister(SP), regs[args['ra']], mem);
+    };
+  },
+
   jmp = function (nextPC) {
     PC = nextPC;
   },
@@ -186,6 +200,16 @@ var
     0x34: executor(decodeIType(bin.ext32), exeStore(bin.storeWord), cont),
     0x35: executor(decodeIType(bin.ext32), exeStore(bin.storeHalf), cont),
     0x36: executor(decodeIType(bin.ext32), exeStore(bin.storeByte), cont),
+
+    0x38: executor(decodeRType, exePop(bin.loadWord, 4), cont),
+    0x39: executor(decodeRType, exePop(bin.loadHalf, 2), cont),
+    0x3A: executor(decodeRType, exePop(bin.loadByte, 1), cont),
+    0x3C: executor(decodeRType, exePop(bin.loadWord, 8), cont),
+
+    0x3D: executor(decodeRType, exePush(bin.storeWord, 4), cont),
+    0x3E: executor(decodeRType, exePush(bin.storeHalf, 2), cont),
+    0x3F: executor(decodeRType, exePush(bin.storeByte, 1), cont),
+    0x41: executor(decodeRType, exePush(bin.storeWord, 8), cont),
 
     0xFF: function () {
       console.log('HALT');

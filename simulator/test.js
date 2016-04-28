@@ -70,6 +70,21 @@ var checkLoadImm = function (op, ra, imm) {
   };
 };
 
+var SP = 12;
+
+var checkPushPop = function (opS, opP, data) {
+  return function () {
+    cpu.setRegisters({
+      1: data
+    });
+    var oldSP = cpu.getRegister(SP);
+    cpu.runInstruction((opS << 24) | 0x100000); // PUSH 1
+    cpu.runInstruction((opP << 24) | 0x200000); // POP 2
+    assert.equal(cpu.getRegister(2), cpu.getRegister(1));
+    assert.equal(cpu.getRegister(SP), oldSP);
+  };
+};
+
 cpu.resetStatus();
 
 describe('Alex CPU', function() {
@@ -168,5 +183,12 @@ describe('Alex CPU', function() {
     it('check LI', checkLoadImm(0x31, -1, 0xFFFF));
     it('check LIU', checkLoadImm(0x32, 0xFFFF, 0xFFFF));
     it('check LIH', checkLoadImm(0x33, -65536, 0xFFFF));
+  });
+
+  describe('Stack', function () {
+    it('check PSHW and POPW', checkPushPop(0x3D, 0x38, 0xF));
+    it('check PSHH and POPH', checkPushPop(0x3E, 0x39, 0xF));
+    it('check PSHB and POPB', checkPushPop(0x3F, 0x3A, 0xF));
+    it('check PSHA and POPA', checkPushPop(0x41, 0x3C, 0xF));
   });
 });
