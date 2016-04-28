@@ -142,24 +142,29 @@ var
     0x29: executor(function (ins) {
       return {
         'code': ins >> 24,
-        'imm': bin.uext32(ins << 8)
+        'imm': ins & 0xFFFFFF
       };
     }, function (args) {
-      return (PC & 0xFC000000) + args['imm'] << 2;
+      var pc = cpu.getPC() << 0;
+      pc &= 0xFC000000;
+      pc |= (args['imm'] << 2);
+      var buf = new Buffer(4);
+      buf.writeInt32LE(pc);
+      return buf;
     }, jmp),
     0x2A: executor(decodeRType, function (args) {
       return regs[args['ra']];
     }, jmp),
     0x2B: executor(decodeRType, function (args) {
-      //var data = loadWord(PC + 4);
-      //regs[SP] -= 4;
-      //storeWord(regs[SP], data);
-      //return args['ra'];
+      var data = bin.add32(PC, bin.four32);
+      regs[SP] = bin.sub32(regs[SP], bin.four32);
+      bin.storeWord(cpu.getRegister(SP), data, mem);
+      return regs[args['ra']];
     }, jmp),
     0x2C: executor(decodeRType, function (args) {
-      //var data = loadWord(regs[SP]);
-      //regs[SP] += 4;
-      //return data;
+      var buf = bin.loadWord(cpu.getRegister(SP), mem);
+      regs[SP] = bin.add32(regs[SP], bin.four32);
+      return buf;
     }, jmp),
 
     0x2D: executor(decodeIType(bin.ext32), exeLoad(bin.loadWord), cont),
@@ -214,6 +219,10 @@ cpu.setRegisters = function (obj) {
       regs[i] = bin.loadInt32(obj[i]);
     }
   }
+};
+
+cpu.getRegister = function (key) {
+  return regs[key].readInt32LE(0, 4);
 };
 
 cpu.getRegisters = function (keys) {

@@ -37,6 +37,16 @@ var checkBranch = function (op, ra, rb, jump) {
   };
 };
 
+var checkJump = function (op, ra, check) {
+  return function () {
+    cpu.setRegisters({
+      1: ra
+    });
+    cpu.runInstruction((op << 24) | 0x100000);
+    check(cpu.getPC());
+  };
+};
+
 cpu.resetStatus();
 
 describe('Alex CPU', function() {
@@ -98,5 +108,30 @@ describe('Alex CPU', function() {
     it('check BLT not jump', checkBranch(0x27, 0, 0, false));
     it('check BGT jump', checkBranch(0x28, 1, 0, true));
     it('check BGT not jump', checkBranch(0x28, 0, 0, false));
+  });
+
+  describe('Jump', function () {
+    it('check J', function () {
+      var oldPC = cpu.getPC();
+      cpu.runInstruction('0x29FFFFFF');
+        var expectedPC = (oldPC & 0xFC000000) | (0xFFFFFF << 2);
+        assert.equal(cpu.getPC() << 0, expectedPC << 0);
+    });
+    it('check JR', checkJump(0x2A, -1, function (pc) {
+        assert.equal(pc, 0xFFFFFFFF);
+    }));
+    it('check CALL', checkJump(0x2B, -1, function (pc) {
+      assert.equal(pc, 0xFFFFFFFF);
+    }));
+    it('check CALL and RET', function () {
+      cpu.setRegisters({
+        1: 0xF
+      });
+      var oldPC = cpu.getPC();
+      cpu.runInstruction(0x2B100000); // CALL 1, store oldPC + 4
+      assert.equal(cpu.getPC(), 0xF);
+      cpu.runInstruction(0x2C000000); // RET, load oldPC + 4
+      assert.equal(cpu.getPC() << 0, (oldPC + 4) << 0);
+    });
   });
 });

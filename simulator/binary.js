@@ -177,6 +177,9 @@ var store = function (bytes) {
   // Number -> Buffer -> Object
   return function (addr, data, mem) {
     for (var i = 0; i < bytes; i++) {
+      if (!mem[addr + i]) {
+        mem[addr + i] = new Buffer(1);
+      }
       mem[addr + i][0] = data[i];
     }
   };
