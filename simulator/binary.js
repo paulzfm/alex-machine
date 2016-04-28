@@ -160,6 +160,11 @@ var load = function (size, bytes) {
   // Number -> Object -> Buffer
   return function (addr, mem) {
     var buf = new Buffer(size);
+    if (size == 4) {
+      buf.writeInt32LE(0, 0, 4);
+    } else {
+      buf.writeInt64LE(0, 0, 8);
+    }
     for (var i = 0; i < bytes; i++) {
       buf[i] = mem[addr + i][0];
     }

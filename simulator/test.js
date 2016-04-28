@@ -47,6 +47,29 @@ var checkJump = function (op, ra, check) {
   };
 };
 
+var checkLoadStore = function (opS, opL, data, bytes) {
+  return function () {
+    cpu.setRegisters({
+      1: data,
+      2: 0xFF
+    });
+    cpu.runInstruction((opS << 24) | 0x120000); // STORE 1, 0(2)
+    cpu.runInstruction((opL << 24) | 0x320000); // LOAD 3, 0(2)
+    var lower = 0xFF;
+    for (var i = 1; i < bytes; i++) {
+      lower |= (lower << 8);
+    }
+    assert.equal(cpu.getRegister(3), cpu.getRegister(1) & lower);
+  };
+};
+
+var checkLoadImm = function (op, ra, imm) {
+  return function () {
+    cpu.runInstruction((op << 24) | 0x100000 | imm);
+    assert.equal(ra, cpu.getRegister(1));
+  };
+};
+
 cpu.resetStatus();
 
 describe('Alex CPU', function() {
@@ -133,5 +156,11 @@ describe('Alex CPU', function() {
       cpu.runInstruction(0x2C000000); // RET, load oldPC + 4
       assert.equal(cpu.getPC() << 0, (oldPC + 4) << 0);
     });
+  });
+
+  describe('Load/Store', function () {
+    it('check LW and SW', checkLoadStore(0x34, 0x2D, -1, 4));
+    it('check LH and SH', checkLoadStore(0x35, 0x2E, -1, 2));
+    it('check LB and SB', checkLoadStore(0x36, 0x2F, -1, 1));
   });
 });

@@ -58,13 +58,15 @@ var
 
   exeLoad = function (loader) {
     return function (args) {
-      regs[args['ra']] = loader(regs[args['rb']] + args['imm'], mem);
+      var addr = bin.add32(regs[args['rb']], args['imm']);
+      regs[args['ra']] = loader(addr.readUInt32LE(0, 4), mem);
     };
   },
 
   exeStore = function (saver) {
     return function (args) {
-      saver(regs[args['rb']] + args['imm'], regs[args['ra']], mem);
+      var addr = bin.add32(regs[args['rb']], args['imm']);
+      saver(addr.readUInt32LE(0, 4), regs[args['ra']], mem);
     };
   },
 
