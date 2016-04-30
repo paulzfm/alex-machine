@@ -256,6 +256,14 @@ var
     0x53: executor(decodeRType, exeFloat(bin.floorFloat), cont),
     0x54: executor(decodeRType, exeFloat(bin.ceilFloat), cont),
 
+    0x80: executor(decodeRType, function (args) {
+
+    }, cont),
+    0x81: executor(decodeRType, function (args) {
+      var code = regs[args['rb']].readUInt16LE(0, 1);
+      process.stdout.write(String.fromCharCode(code));
+    }, cont),
+
     0xFF: function () {
       console.log('HALT');
     }
@@ -342,3 +350,9 @@ cpu.fetchStatus = function () {
 };
 
 module.exports = cpu;
+
+//cpu.resetStatus();
+//cpu.setRegisters({
+//  2: 65
+//});
+//cpu.runInstruction(0x81120000);
