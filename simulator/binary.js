@@ -249,6 +249,10 @@ var load = function (size, bytes) {
       buf.writeDoubleLE(0);
     }
     for (var i = 0; i < bytes; i++) {
+      if (!mem[addr + i]) {
+        mem[addr + i] = new Buffer(1);
+        console.log('Warning: memory at ' + (addr + i) + ' not exist!');
+      }
       buf[i] = mem[addr + i][0];
     }
     return buf;

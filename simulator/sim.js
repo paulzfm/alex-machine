@@ -11,6 +11,16 @@ fs.readFile('/home/alexwang/dev/proj/os/alex-machine-tests/a.out', function (err
   var text = (sections.filter(function (obj) {
     return obj.name == '.text';
   }))[0];
+  var bss = (sections.filter(function (obj) {
+    return obj.name == '.bss';
+  }))[0];
+
+  cpu.resetStatus();
+
+  // load BSS
+  cpu.initMemory(bss.data);
+
+  // run instructions
   var instructions = text.data;
   var total = instructions.length / 4;
 

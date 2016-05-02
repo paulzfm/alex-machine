@@ -280,12 +280,19 @@ cpu.runInstruction = function (ins) {
   (insTable[opcode])(ins);
 };
 
+cpu.initMemory = function (buf) {
+  for (var i = 0; i < buf.length; i++) {
+    mem[i] = buf.slice(i, i + 1);
+  }
+};
+
 // for testing
 cpu.resetStatus = function () {
   regs = [];
   for (var i = 0; i < 16; i++) {
     regs.push(new Buffer(4));
   }
+  regs[0].writeInt16LE(0, 0, 4);
   fregs = [];
   for (var i = 0; i < 16; i++) {
     fregs.push(new Buffer(8));
