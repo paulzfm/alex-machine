@@ -1,4 +1,5 @@
 var bin = require('./binary');
+var sprintf = require('sprintf');
 
 var
   PC = new Buffer(4),
@@ -376,6 +377,70 @@ cpu.fetchStatus = function () {
     'fregs': fregs.slice(),
     'mem': JSON.parse(JSON.stringify(mem)),
     'pc': PC
+  }
+};
+
+cpu.sprintRegs = function () {
+  var regNames = [
+    'r0', 't0', 't1', 't2', 't3', 't4', 's0', 's1', 's2', 's3', 's4',
+    'fp', 'sp'
+  ];
+
+  var ret = sprintf("pc =\t0x%08x\n", cpu.getPC());
+  for (var i = 0; i < regNames.length; ++i) {
+    ret += sprintf(regNames[i] + " =\t0x%08x", regs[i].readUInt32LE());
+    if (i % 2 != 1)
+      ret += "\n";
+    else
+      ret += "\t";
+  }
+  return ret;
+};
+
+cpu.sprintMem = function (start, count) {
+  start = (start / 4).toFixed() * 4;
+
+  var readMem32LE = function (addr) {
+    var sum = 0;
+    for (var i = 0; i < 4; ++i) {
+      if (mem[addr + i]) {
+        sum += mem[addr + i][0] << (8 * i);
+      }
+    }
+    return sum;
+  };
+  var readMemChar = function (addr) {
+    return String.fromCharCode(mem[addr][0]);
+  };
+
+  var ret = '';
+  for (var i = 0; i < count; ++i, start += 4 * 4) {
+    ret += sprintf("0x%08x:\t0x%08x 0x%08x 0x%08x 0x%08x\t", start,
+      readMem32LE(start), readMem32LE(start + 4), readMem32LE(start + 4 * 2), readMem32LE(start + 4 * 3));
+    for (var j = 0; j < 4 * 4; ++j) {
+      ret += readMemChar(start + j);
+    }
+    ret += "\n";
+  }
+
+  return ret;
+};
+
+cpu.printDebugInfo = function () {
+  var pc = cpu.getPC(), sp = regs[SP].readUInt32LE();
+  console.log("--------------- Alex Machine Debug Info -----------------");
+  process.stdout.write(cpu.sprintRegs());
+  console.log("instructions: ");
+  process.stdout.write(cpu.sprintMem(pc, 1, 4));
+  console.log("stack: ");
+  console.log(cpu.sprintMem(sp, 4, 4));
+};
+
+cpu.initializeStack = function () {
+  var stackTop = 0x7c00000 + 1024;
+  for (var i = stackTop - 1; i >= stackTop - 100 * 1024; --i) {
+    mem[i] = new Buffer(1);
+    mem[i][0] = 0;
   }
 };
 
