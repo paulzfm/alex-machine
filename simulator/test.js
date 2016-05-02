@@ -183,6 +183,10 @@ describe('Alex CPU', function() {
     it('check LI', checkLoadImm(0x31, -1, 0xFFFF));
     it('check LIU', checkLoadImm(0x32, 0xFFFF, 0xFFFF));
     it('check LIH', checkLoadImm(0x33, -1, 0xFFFF));
+    it('check R0 is read-only', function () {
+      cpu.runInstruction(0x3100FFFF); // LI 0, 0xFFFF
+      assert.equal(0, cpu.getRegister(0));
+    });
   });
 
   describe('Stack', function () {
