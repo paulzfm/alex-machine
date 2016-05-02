@@ -29,7 +29,7 @@ fs.readFile('/home/alexwang/dev/proj/os/alex-machine-tests/a.out', function (err
 
   cpu.initializeStack();
   for (var i = 0; i < total; i++) {
-    var ins = instructions.readUInt32LE(i * 4);
+    var ins = cpu.fetchInstruction();
     //console.log(ins.toString(16));
     cpu.printDebugInfo();
     try {
