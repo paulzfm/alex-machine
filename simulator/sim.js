@@ -20,12 +20,12 @@ fs.readFile('/Users/paul/Workspace/alex-cpu-test/a.out', function (err, data) {
   // load BSS
   cpu.initMemory(bss.data);
 
+  // load instructions
+  cpu.loadInstructions(text.data, bss.data.length);
+
   // run instructions
-  var instructions = text.data;
-  var total = instructions.length / 4;
-  for (var i = 0; i < total; i++) {
-    var ins = instructions.readUInt32LE(i * 4);
-    //console.log(ins.toString(16));
+  while (true) {
+    var ins = cpu.fetchInstruction();
     cpu.runInstruction(ins);
   }
 });
