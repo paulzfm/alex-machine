@@ -182,7 +182,7 @@ describe('Alex CPU', function() {
   describe('Load Imm', function () {
     it('check LI', checkLoadImm(0x31, -1, 0xFFFF));
     it('check LIU', checkLoadImm(0x32, 0xFFFF, 0xFFFF));
-    it('check LIH', checkLoadImm(0x33, -65536, 0xFFFF));
+    it('check LIH', checkLoadImm(0x33, -1, 0xFFFF));
   });
 
   describe('Stack', function () {
