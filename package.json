@@ -1,6 +1,7 @@
 {
   "dependencies": {
+    "chai": "~3.5.0",
     "elfy": "~0.1.0",
-    "chai": "~3.5.0"
+    "sprintf": "^0.1.5"
   }
 }

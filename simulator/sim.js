@@ -2,7 +2,7 @@ var cpu = require('./alex-cpu');
 var elfy = require('elfy');
 var fs = require('fs');
 
-fs.readFile('/Users/paul/Workspace/alex-cpu-test/a.out', function (err, data) {
+fs.readFile('/home/alexwang/dev/proj/os/alex-machine-tests/a.out', function (err, data) {
   if (err) {
     throw err;
   }
@@ -13,9 +13,17 @@ fs.readFile('/Users/paul/Workspace/alex-cpu-test/a.out', function (err, data) {
   }))[0];
   var instructions = text.data;
   var total = instructions.length / 4;
+
+  cpu.initializeStack();
   for (var i = 0; i < total; i++) {
     var ins = instructions.readUInt32LE(i * 4);
     console.log(ins.toString(16));
-    cpu.runInstruction(ins);
+    try {
+      cpu.runInstruction(ins);
+    }
+    catch(e) {
+      cpu.printDebugInfo();
+      throw e;
+    }
   }
 });
