@@ -3,8 +3,7 @@ var sprintf = require('sprintf');
 
 var
   PC = new Buffer(4),
-  regs = [new Buffer(4),new Buffer(4),new Buffer(4),new Buffer(4),new Buffer(4),new Buffer(4),new Buffer(4),new Buffer(4),
-    new Buffer(4),new Buffer(4),new Buffer(4),new Buffer(4),new Buffer(4),new Buffer(4),new Buffer(4),new Buffer(4)],
+  regs = [],
   FP = 11,
   SP = 12,
   GP = 13,
@@ -364,7 +363,7 @@ cpu.sprintRegs = function () {
     'fp', 'sp'
   ];
 
-  var ret = '';
+  var ret = sprintf("pc =\t0x%08x\n", cpu.getPC());
   for (var i = 0; i < regNames.length; ++i) {
     ret += sprintf(regNames[i] + " =\t0x%08x", regs[i].readUInt32LE());
     if (i % 2 != 1)
@@ -386,21 +385,29 @@ cpu.sprintMem = function(start, count) {
     }
     return sum;
   };
+  var readMemChar = function (addr) {
+    return String.fromCharCode(mem[addr][0]);
+  };
 
   var ret = '';
   for (var i = 0; i < count; ++i, start += 4*4) {
-    ret += sprintf("0x%08x:\t0x%08x 0x%08x 0x%08x 0x%08x\n", start,
+    ret += sprintf("0x%08x:\t0x%08x 0x%08x 0x%08x 0x%08x\t", start,
       readMem32LE(start),readMem32LE(start+4),readMem32LE(start+4*2),readMem32LE(start+4*3));
+    for (var j = 0; j < 4*4; ++j) {
+      ret += readMemChar(start+j);
+    }
+    ret += "\n";
   }
+
   return ret;
 };
 
 cpu.printDebugInfo = function() {
   var pc = cpu.getPC(), sp = regs[SP].readUInt32LE();
   console.log("--------------- Alex Machine Debug Info -----------------");
-  console.log(cpu.sprintRegs());
+  process.stdout.write(cpu.sprintRegs());
   console.log("instructions: ");
-  console.log(cpu.sprintMem(pc, 1, 4));
+  process.stdout.write(cpu.sprintMem(pc, 1, 4));
   console.log("stack: ");
   console.log(cpu.sprintMem(sp, 4, 4));
 };
