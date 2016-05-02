@@ -207,7 +207,8 @@ var
       regs[args['ra']] = args['imm'];
     }, cont),
     0x33: executor(decodeIType(bin.uext32), function (args) {
-      regs[args['ra']] = bin.or32(regs[args['ra']], bin.shl32(args['imm'], bin.int32Buf(16)));
+      regs[args['ra']] = bin.or32(bin.and32(regs[args['ra']], bin.int32Buf(0xFFFF)),
+        bin.shl32(args['imm'], bin.int32Buf(16)));
     }, cont),
 
     0x34: executor(decodeIType(bin.ext32), exeStore(bin.storeWord), cont),

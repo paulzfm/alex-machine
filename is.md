@@ -208,7 +208,7 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | LF  | 30 fa ra imm | fa := loadf(ra + signed_ext(imm)) |
 | LI  | 31 ra ... imm| ra := signed_ext(imm) |
 | LIU | 32 ra ... imm| ra := unsigned_ext(imm) |
-| LIH | 33 ra ... imm| ra := ra or (unsigned_ext(imm) << 16) |
+| LIH | 33 ra ... imm| ra := (ra and 0xFFFF) or (unsigned_ext(imm) << 16) |
 | SW  | 34 ra rb imm | store(rb + signed_ext(imm), 4, ra) |
 | SH  | 35 ra rb imm | store(rb + signed_ext(imm), 2, ra) |
 | SB  | 36 ra rb imm | store(rb + signed_ext(imm), 1, ra) |
