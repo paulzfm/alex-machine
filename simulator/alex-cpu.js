@@ -168,18 +168,8 @@ var
     0x27: executor(decodeIType(bin.oext32), exeBranch(bin.lt32), jmp),
     0x28: executor(decodeIType(bin.oext32), exeBranch(bin.gt32), jmp),
 
-    0x29: executor(function (ins) {
-      return {
-        'code': ins >> 24,
-        'imm': ins & 0xFFFFFF
-      };
-    }, function (args) {
-      var pc = cpu.getPC() << 0;
-      pc &= 0xFC000000;
-      pc |= (args['imm'] << 2);
-      var buf = new Buffer(4);
-      buf.writeInt32LE(pc);
-      return buf;
+    0x29: executor(decodeIType(bin.oext32), function (args) {
+      return bin.add32(PC, args['imm']);
     }, jmp),
     0x2A: executor(decodeRType, function (args) {
       return regs[args['ra']];
@@ -483,7 +473,7 @@ cpu.startRunning = function (address, countOfInstructions) {
       }
 
       //console.log(sprintf("0x%08x", instr));
-      cpu.printDebugInfo();
+      //cpu.printDebugInfo();
 
       if (instr == 0xFFFFFFFF)
         break;
