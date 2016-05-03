@@ -35,5 +35,5 @@ fs.readFile('/home/alexwang/dev/proj/os/alex-machine-tests/a.out', function (err
 
   // 初始化堆栈, 这个函数是临时用的, 开辟一段内存用于堆栈
   cpu.initializeStack(0x7c00000, 200 * 1024); // 128MiB - 1MiB, size: 200KiB
-  cpu.startRunning(elf.entry, 1000);
+  cpu.startRunning(elf.entry, 500);
 });

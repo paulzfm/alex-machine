@@ -312,7 +312,7 @@ cpu.resetStatus = function () {
   for (var i = 0; i < 16; i++) {
     regs.push(new Buffer(4));
   }
-  regs[0].writeInt16LE(0, 0, 4);
+  regs[0].writeInt32LE(0, 0);
   fregs = [];
   for (var i = 0; i < 16; i++) {
     fregs.push(new Buffer(8));
@@ -483,7 +483,7 @@ cpu.startRunning = function (address, countOfInstructions) {
       }
 
       //console.log(sprintf("0x%08x", instr));
-      //cpu.printDebugInfo();
+      cpu.printDebugInfo();
 
       if (instr == 0xFFFFFFFF)
         break;
