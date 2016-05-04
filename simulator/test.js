@@ -151,8 +151,8 @@ describe('Alex CPU', function() {
   describe('Jump', function () {
     it('check J', function () {
       var oldPC = cpu.getPC();
-      cpu.runInstruction('0x29FFFFFF');
-        var expectedPC = (oldPC & 0xFC000000) | (0xFFFFFF << 2);
+      cpu.runInstruction('0x2900FFFF');
+        var expectedPC = oldPC - 4;
         assert.equal(cpu.getPC() << 0, expectedPC << 0);
     });
     it('check JR', checkJump(0x2A, -1, function (pc) {
