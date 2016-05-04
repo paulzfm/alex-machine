@@ -151,8 +151,8 @@ describe('Alex CPU', function() {
   describe('Jump', function () {
     it('check J', function () {
       var oldPC = cpu.getPC();
-      cpu.runInstruction('0x29FFFFFF');
-        var expectedPC = (oldPC & 0xFC000000) | (0xFFFFFF << 2);
+      cpu.runInstruction('0x2900FFFF');
+        var expectedPC = oldPC - 4;
         assert.equal(cpu.getPC() << 0, expectedPC << 0);
     });
     it('check JR', checkJump(0x2A, -1, function (pc) {
@@ -183,6 +183,10 @@ describe('Alex CPU', function() {
     it('check LI', checkLoadImm(0x31, -1, 0xFFFF));
     it('check LIU', checkLoadImm(0x32, 0xFFFF, 0xFFFF));
     it('check LIH', checkLoadImm(0x33, -1, 0xFFFF));
+    it('check R0 is read-only', function () {
+      cpu.runInstruction(0x3100FFFF); // LI 0, 0xFFFF
+      assert.equal(0, cpu.getRegister(0));
+    });
   });
 
   describe('Stack', function () {

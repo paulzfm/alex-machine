@@ -13,6 +13,14 @@ var
   fregs = [],
   mem = {},
 
+  writeRegister = function (idx, buf) {
+    if (idx == 0) {
+      console.log('Warning: R0 is read-only.');
+    } else {
+      regs[idx] = buf;
+    }
+  },
+
   decodeRType = function (ins) {
     return {
       'code': ins >>> 24,
@@ -35,13 +43,13 @@ var
 
   exeBinR = function (op) {
     return function (args) {
-      regs[args['ra']] = op(regs[args['rb']], regs[args['rc']]);
+      writeRegister(args['ra'], op(regs[args['rb']], regs[args['rc']]));
     };
   },
 
   exeBinI = function (op) {
     return function (args) {
-      regs[args['ra']] = op(regs[args['rb']], args['imm']);
+      writeRegister(args['ra'], op(regs[args['rb']], args['imm']));
     };
   },
 
@@ -60,7 +68,7 @@ var
   exeLoad = function (loader) {
     return function (args) {
       var addr = bin.add32(regs[args['rb']], args['imm']);
-      regs[args['ra']] = loader(addr.readUInt32LE(0, 4), mem);
+      writeRegister(args['ra'], loader(addr.readUInt32LE(0, 4), mem));
     };
   },
 
@@ -73,7 +81,7 @@ var
 
   exePop = function (loader, bytes) {
     return function (args) {
-      regs[args['ra']] = loader(cpu.getRegister(SP), mem);
+      writeRegister(args['ra'], loader(cpu.getRegister(SP), mem));
       regs[SP] = bin.add32(regs[SP], bin.int32Buf(bytes));
     };
   },
@@ -93,7 +101,7 @@ var
 
   exeFloatCmp = function (op) {
     return function (args) {
-      regs[args['ra']] = op(fregs[args['rb']], fregs[args['rc']]);
+      writeRegister(args['ra'], op(fregs[args['rb']], fregs[args['rc']]));
     };
   },
 
@@ -192,14 +200,14 @@ var
     0x30: executor(decodeIType(bin.ext32), exeLoad(bin.loadFloat), cont),
 
     0x31: executor(decodeIType(bin.ext32), function (args) {
-      regs[args['ra']] = args['imm'];
+      writeRegister(args['ra'], args['imm']);
     }, cont),
     0x32: executor(decodeIType(bin.uext32), function (args) {
-      regs[args['ra']] = args['imm'];
+      writeRegister(args['ra'], args['imm']);
     }, cont),
     0x33: executor(decodeIType(bin.uext32), function (args) {
-      regs[args['ra']] = bin.or32(bin.and32(regs[args['ra']], bin.int32Buf(0xFFFF)),
-        bin.shl32(args['imm'], bin.int32Buf(16)));
+      writeRegister(args['ra'], bin.or32(bin.and32(regs[args['ra']], bin.int32Buf(0xFFFF)),
+        bin.shl32(args['imm'], bin.int32Buf(16))));
     }, cont),
 
     0x34: executor(decodeIType(bin.ext32), exeStore(bin.storeWord), cont),
@@ -229,7 +237,9 @@ var
     }, cont),
     0x47: executor(decodeRType, function (args) {
       var val = fregs[args['rb']].readDoubleLE();
-      regs[args['ra']].writeInt32LE(0, 4, Math.floor(val));
+      var buf = new Buffer(4);
+      buf.writeInt32LE(0, 4, Math.floor(val));
+      writeRegister(args['ra'], buf);
     }, cont),
 
     0x48: executor(decodeRType, exeFloat(bin.addFloat), cont),
@@ -392,7 +402,7 @@ var readMemUInt32LE = function (address) {
   var sum = 0;
   for (var i = 0; i < 4; ++i) {
     if (mem[address + i]) {
-      sum += mem[address + i].readUInt8(0) << 8*i >>> 0;
+      sum += mem[address + i].readUInt8(0) << 8 * i >>> 0;
     }
   }
   return sum;
@@ -400,17 +410,17 @@ var readMemUInt32LE = function (address) {
 
 cpu.sprintMem = function(start, count) {
   start = (start / 4).toFixed() * 4;
-  
   var readMemChar = function (addr) {
     return String.fromCharCode(mem[addr][0]);
   };
 
   var ret = '';
-  for (var i = 0; i < count; ++i, start += 4*4) {
+  
+  for (var i = 0; i < count; ++i, start += 4 * 4) {
     ret += sprintf("0x%08x:\t0x%08x 0x%08x 0x%08x 0x%08x\t", start,
-      readMemUInt32LE(start),readMemUInt32LE(start+4),readMemUInt32LE(start+4*2),readMemUInt32LE(start+4*3));
-    for (var j = 0; j < 4*4; ++j) {
-      ret += readMemChar(start+j);
+      readMemUInt32LE(start), readMemUInt32LE(start + 4), readMemUInt32LE(start + 4 * 2), readMemUInt32LE(start + 4 * 3));
+    for (var j = 0; j < 4 * 4; ++j) {
+      ret += readMemChar(start + j);
     }
     ret += "\n";
   }
@@ -418,7 +428,7 @@ cpu.sprintMem = function(start, count) {
   return ret;
 };
 
-cpu.printDebugInfo = function() {
+cpu.printDebugInfo = function () {
   try {
     var pc = cpu.getPC(), sp = regs[SP].readUInt32LE();
     console.log("--------------- Alex Machine Debug Info -----------------");
@@ -428,7 +438,7 @@ cpu.printDebugInfo = function() {
     console.log("stack: ");
     console.log(cpu.sprintMem(sp, 4, 4));
   }
-  catch(e) {
+  catch (e) {
     // ignore unreadable memory exception
   }
 };
@@ -456,7 +466,7 @@ cpu.startRunning = function (address, countOfInstructions) {
     //  return true;
     return false;
   });
-  
+
   var instructionCounter = 0;
   while (true) {
     try {
@@ -479,7 +489,7 @@ cpu.startRunning = function (address, countOfInstructions) {
         break;
       cpu.runInstruction(instr);
     }
-    catch(e) {
+    catch (e) {
       cpu.printDebugInfo();
       throw e;
     }
