@@ -1,4 +1,5 @@
 var cpu = require('./alex-cpu');
+var dbg = require('./debugger');
 var elfy = require('elfy');
 var fs = require('fs');
 var sprintf = require('sprintf');
@@ -20,6 +21,9 @@ if (process.argv.length < 3) {
     var dataSections = sections.filter(function (obj) {
       return ['.data', '.bss', '.rodata'].indexOf(obj.name) != -1;
     });
+    
+    dbg.initialize(sections);
+    dbg.printSymbols();
 
     cpu.resetStatus();
 
@@ -27,9 +31,7 @@ if (process.argv.length < 3) {
     cpu.initMemorySection(text.addr, text.data, text.size);
     for (var i = 0; i < dataSections.length; ++i) {
       if (dataSections[i].name === '.bss') {
-        cpu.initMemorySection(dataSections[i].addr, null, dataSections[i].size, function () {
-          return 0;
-        });
+        cpu.initMemorySection(dataSections[i].addr, null, dataSections[i].size, function () { return 0; });
       }
       else {
         cpu.initMemorySection(dataSections[i].addr, dataSections[i].data, dataSections[i].size);
@@ -40,6 +42,6 @@ if (process.argv.length < 3) {
 
     // 初始化堆栈, 这个函数是临时用的, 开辟一段内存用于堆栈
     cpu.initializeStack(0x7c00000, 200 * 1024); // 128MiB - 1MiB, size: 200KiB
-    cpu.startRunning(elf.entry, 100 * 1024 /* Execute this number of instructions and stop */);
+    cpu.startRunning(elf.entry, 100 * 1024 /* Execute this number of instructions and stop */, dbg);
   });
 }

@@ -1,5 +1,6 @@
 var bin = require('./binary');
 var sprintf = require('sprintf');
+var dbg = require('./debugger')
 
 var
   PC = new Buffer(4),
@@ -398,7 +399,7 @@ cpu.sprintRegs = function () {
   return ret;
 };
 
-var readMemUInt32LE = function (address) {
+cpu.readMemUInt32LE = function (address) {
   var sum = 0;
   for (var i = 0; i < 4; ++i) {
     if (mem[address + i]) {
@@ -470,8 +471,10 @@ cpu.startRunning = function (address, countOfInstructions) {
   var instructionCounter = 0;
   while (true) {
     try {
+      dbg.onExecuteInstruction(cpu);
+      
       var pc = cpu.getPC();
-      var instr = readMemUInt32LE(pc);
+      var instr = cpu.readMemUInt32LE(pc);
 
       if (pcBreakPoint && pcBreakPoint == pc) {
         console.log(sprintf("PC Breakpoint at 0x%08x", pc));
