@@ -2,6 +2,7 @@ var elfy = require('elfy');
 var fs = require('fs');
 var sprintf = require('sprintf');
 var readlineSync = require('readline-sync');
+var disasm = require('./disassembler');
 
 var symbolTable = {};
 
@@ -27,8 +28,8 @@ var readNullEndString = function (data, offset) {
 
 var symbols = {};
 var lines = {};
-var dbg = {}
-dbg.initialize = function (sections) {
+var dbg = {};
+dbg.initialize = function (sections, lineSymbolFile) {
   var symtab = (sections.filter(function (obj) {
     return obj.name == '.symtab';
   }))[0];
@@ -53,7 +54,7 @@ dbg.initialize = function (sections) {
   }
 
   // load debug line numbers
-  lines = JSON.parse(fs.readFileSync('/home/alexwang/dev/proj/os/alex-machine-tests/a.out.json', 'utf8'));
+  lines = JSON.parse(fs.readFileSync(lineSymbolFile, 'utf8'));
 };
 
 dbg.getSymbolByAddress = function(address) {
@@ -87,8 +88,42 @@ dbg.getAddressFileLine = function (address) {
   return null;
 };
 
-dbg.debugConsole = function () {
+dbg.debugConsole = function (pc, inst, cpu, mode, fileLine) {
 
+  console.log(sprintf("  PC: 0x%08x\tIns: 0x%08x", pc, inst));
+  if (mode == AsmStep) {
+    console.log(sprintf("    %s", disasm.disassemble(inst)));
+  }
+  else if (mode == SourceStep) {
+    console.log(sprintf("  %s:%s", fileLine.file, fileLine.line));
+    console.log(sprintf("    %s", readFileLine(fileLine.file, parseInt(fileLine.line))));
+  }
+
+  while (true) {
+    var cmd = readlineSync.question('AlexDbg => ');
+    var tokens = cmd.split(" ");
+    if (cmd == "" || tokens[0] == "c") {
+      break;
+    }
+    else if (tokens[0] == "p") {
+      if (tokens.length == 1 || tokens[1] == "d") {
+        cpu.printDebugInfo();
+      }
+    }
+    else if (tokens[0] == "x") {
+      var sym = dbg.getSymbolAddress(tokens[1]);
+      if (sym) {
+        var val = cpu.readMemUInt32LE(sym.value);
+        console.log(sprintf("*((uint32_t*)%s) = 0x%08x", sym.name, val))
+      }
+      else {
+        console.log(sprintf("symbol %s not found!", tokens[1]));
+      }
+    }
+    else {
+      console.log("unknown command");
+    }
+  }
 };
 
 var cachedFiles = {};
@@ -100,39 +135,22 @@ var readFileLine = function (file, line) {
   return cachedFiles[file][line];
 };
 
+var AsmStep = 1, SourceStep = 2, NoStep = 3;
+var stepMode = AsmStep;
+
 dbg.onExecuteInstruction = function (c) {
   var pc = c.getPC();
-  var fileLine = dbg.getAddressFileLine(pc);
-  if (!fileLine)
-    return;
-
   var inst = c.readMemUInt32LE(pc);
-  console.log(sprintf("  PC: 0x%08x\tIns: 0x%08x", pc, inst));
-  console.log(sprintf("  %s:%s", fileLine.file, fileLine.line));
-  console.log(sprintf("    %s", readFileLine(fileLine.file, parseInt(fileLine.line))));
-  while (true) {
-    var cmd = readlineSync.question('AlexDbg => ');
-    var tokens = cmd.split(" ");
-    if (cmd == "" || tokens[0] == "c") {
-      break;
+
+  if (stepMode != NoStep) {
+    var fileLine = dbg.getAddressFileLine(pc);
+    if (stepMode == SourceStep) {
+      if (!fileLine)
+        return;
+      dbg.debugConsole(pc, inst, c, stepMode, fileLine);
     }
-    else if (tokens[0] == "p") {
-      if (tokens.length == 1 || tokens[1] == "d") {
-        c.printDebugInfo();
-      }
-    }
-    else if (tokens[0] == "x") {
-      var sym = dbg.getSymbolAddress(tokens[1]);
-      if (sym) {
-        var val = c.readMemUInt32LE(sym.value);
-        console.log(sprintf("*((uint32_t*)%s) = 0x%08x", sym.name, val))
-      }
-      else {
-        console.log(sprintf("symbol %s not found!", tokens[1]));
-      }
-    }
-    else {
-      console.log("unknown command");
+    else if (stepMode == AsmStep) {
+      dbg.debugConsole(pc, inst, c, stepMode);
     }
   }
 };

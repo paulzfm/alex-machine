@@ -1,0 +1,151 @@
+var sprintf = require('sprintf');
+
+var disasm = {};
+
+var parseRegister = function (num) {
+  var r = ['r0',
+    's0', 's1', 's2', 's3', 's4',
+    't0', 't1', 't2', 't3', 't4',
+    'fp', 'sp', 'gp', 'at', 'lr'][num];
+  if (r)
+    return r;
+  else
+    return '??';
+};
+
+var InstrRRR = function (name) {
+  return function (inst) {
+    var ra = (inst & 0x00F00000 >> 20);
+    var rb = (inst & 0x000F0000 >> 16);
+    var rc = (inst & 0x0000F000 >> 12);
+    return sprintf("%s\t$%s, $%s, $%s", name, parseRegister(ra), parseRegister(rb), parseRegister(rc));
+  };
+};
+var InstrRRI = function (name) {
+  return function (inst) {
+    var ra = (inst & 0x00F00000) >> 20;
+    var rb = (inst & 0x000F0000) >> 16;
+    if (name[name.length-1] == 'u') {
+      return sprintf("%s\t$%s, $%s, 0x%04x",
+        name, parseRegister(ra), parseRegister(rb), inst & 0x0000FFFF);
+    }
+    else {
+      return sprintf("%s\t$%s, $%s, %d",
+        name, parseRegister(ra), parseRegister(rb), (inst & 0x0000FFFF) << 16 >> 16);
+    }
+  };
+};
+var InstrRR = function (name) {
+  return function (inst) {
+    var ra = (inst & 0x00F00000) >> 20;
+    var rb = (inst & 0x000F0000) >> 16;
+    return sprintf("%s\t$%s, $%s",
+      name, parseRegister(ra), parseRegister(rb));
+  };
+};
+var InstrRI = function (name) {
+  return function (inst) {
+    var ra = (inst & 0x00F00000) >> 20;
+    if (name[name.length-1] == 'u')
+      return sprintf("%s\t$%s, 0x%04x",
+        name, parseRegister(ra), inst & 0xFFFF);
+    else
+      return sprintf("%s\t$%s, %d",
+        name, parseRegister(ra), (inst & 0x0000FFFF) << 16 >> 16);
+  };
+};
+var InstrR = function (name) {
+  return function (inst) {
+    var ra = (inst & 0x00F00000) >> 20;
+    return sprintf("%s\t$%s", name, parseRegister(ra));
+  };
+};
+
+var InstrI = function (name) {
+  return function (inst) {
+    if (name[name.length-1] == 'u')
+      return sprintf("%s\t0x%04x", name, inst & 0x0000FFFF);
+    else
+      return sprintf("%s\t0x%d", name, (inst & 0x0000FFFF) << 16 >> 16);
+  };
+};
+
+/* These are auto generated, please DO NOT edit! */
+var instructions = {
+  0x1: InstrRRR('add'),
+  0x2: InstrRRI('addi'),
+  0x3: InstrRRI('addiu'),
+  0x4: InstrRRR('sub'),
+  0x5: InstrRRI('subi'),
+  0x6: InstrRRI('subiu'),
+  0x7: InstrRRR('mul'),
+  0x8: InstrRRI('muli'),
+  0x9: InstrRRI('muliu'),
+  0xa: InstrRRR('div'),
+  0xb: InstrRRI('divi'),
+  0xc: InstrRRI('diviu'),
+  0x43: InstrRRR('divu'),
+  0xd: InstrRRR('mod'),
+  0xe: InstrRRI('modi'),
+  0xf: InstrRRI('modiu'),
+  0x44: InstrRRR('modu'),
+  0x10: InstrRRR('shl'),
+  0x11: InstrRRI('shli'),
+  0x12: InstrRRR('slr'),
+  0x13: InstrRRI('slri'),
+  0x14: InstrRRR('sar'),
+  0x15: InstrRRI('sari'),
+  0x16: InstrRRR('and'),
+  0x17: InstrRRR('or'),
+  0x42: InstrRRI('ori'),
+  0x18: InstrRRR('xor'),
+  0x19: InstrRR('not'),
+  0x1a: InstrRRR('eq'),
+  0x1b: InstrRRR('ne'),
+  0x1c: InstrRRR('lt'),
+  0x1d: InstrRRR('ltu'),
+  0x1e: InstrRRR('gt'),
+  0x1f: InstrRRR('gtu'),
+  0x20: InstrRRR('le'),
+  0x21: InstrRRR('leu'),
+  0x22: InstrRRR('ge'),
+  0x23: InstrRRR('geu'),
+  0x24: InstrI('b'),
+  0x25: InstrRRI('be'),
+  0x26: InstrRRI('bne'),
+  0x27: InstrRRI('blt'),
+  0x28: InstrRRI('bgt'),
+  0x2a: InstrR('jr'),
+  0x2b: InstrR('call'),
+  0x2d: InstrRRI('lw'),
+  0x2e: InstrRRI('lh'),
+  0x2f: InstrRRI('lb'),
+  0x31: InstrRI('li'),
+  0x32: InstrRI('liu'),
+  0x33: InstrRI('lih'),
+  0x34: InstrRRI('sw'),
+  0x35: InstrRRI('sh'),
+  0x36: InstrRRI('sb'),
+  0x38: InstrR('popw'),
+  0x39: InstrR('poph'),
+  0x3a: InstrR('popb'),
+  0x3c: InstrR('popa'),
+  0x3d: InstrR('pshw'),
+  0x3e: InstrR('pshh'),
+  0x3f: InstrR('pshb'),
+  0x41: InstrR('psha'),
+  0x80: InstrRR('bin'),
+  0x81: InstrRR('bout')
+};
+
+disasm.disassemble = function (inst) {
+  var opcode = inst >>> 24;
+  if (instructions[opcode]) {
+    return instructions[opcode](inst);
+  }
+  else {
+    return sprintf("Instr: 0x%08x", inst);
+  }
+};
+
+module.exports = disasm;

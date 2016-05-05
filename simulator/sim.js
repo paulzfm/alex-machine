@@ -7,6 +7,7 @@ var sprintf = require('sprintf');
 if (process.argv.length < 3) {
   process.stderr.write('Usage: node sim.js program_path\n');
 } else {
+  var fileName = process.argv[2];
   fs.readFile(process.argv[2], function (err, data) {
     if (err) {
       throw err;
@@ -22,7 +23,7 @@ if (process.argv.length < 3) {
       return ['.data', '.bss', '.rodata'].indexOf(obj.name) != -1;
     });
     
-    dbg.initialize(sections);
+    dbg.initialize(sections, fileName + ".json");
     dbg.printSymbols();
 
     cpu.resetStatus();
