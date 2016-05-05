@@ -23,7 +23,23 @@ F0~F15. All floating-point registers have 64 bits, i.e, they are represented in 
 
 ### Other Registers
 
-...
+| Name | Purpose |
+| :--: | :------ |
+| IVEC | interrupt vector |
+| FLGS | internal flags |
+| PTBR | starting address of page directory |
+
+The FLGS register is consisted of
+
+```
++----------+------------+--------------------+-------+-----------------+
+|  31..4   |      3     |          2         |   1   |        0        |
++----------+------------+--------------------+-------+-----------------+
+| reserved | user mode? | Interrupt enabled? | trap? | Paging enabled? |
++----------+------------+--------------------+-------+-----------------+
+```
+
+These registers all have 32 bits.
 
 ## Axioms
 
@@ -131,6 +147,8 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | .>= | Yes | float -> float -> bool | greater than or equal |
 | floor(_x_) | No | float -> float | the maximum integer value less or equal than _x_ |
 | ceil(_x_) | No | float -> float | the minimal integer value greater or equal than _x_ |
+| getchar(_d_) | No | int32 -> int32 | fetch ASCII code (0~127) of the char from device _d_ |
+| putchar(_d_, _c_) | No | int32 * int32 -> () | output char _c_ (represented in ASCII code) to device _d_ |
 
 ## Instructions
 
@@ -257,40 +275,19 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 
 ### System
 
-| Name | Machine Code | Meaning |
-| :----- | :----------- | :-------- |
-| BIN  | 80 ra rb ... | rb := getchar(ra) |
-| BOUT | 81 ra rb ... | putchar(ra, rb) |
-| IDLE | 1111111 000 ... ... ... | response hardware interrupt (include timer) |
-| CLI  | 1111111 001 001 rc ... | clear interrupt (rc := IENA, IENA := 0) |
-| STI  | 1111111 001 010 ... ... | set interrupt (IENA := 1) |
-| LUSP | 1111111 010 001 rc ... | rc := USP |
-| SUSP | 1111111 010 010 rc ... | USP := rc |
-| IRET | 1111111 011 ... ... ... | return from interrupt |
-| TRAP | 1111111 110 ... ... ... | trap |
-| STIV | 1111111 111 000 rc ... | IVEC := rc |
-| STPD | 1111111 111 001 rc ... | PDIR := rc |
-| STPG | 1111111 111 010 rc ... | PG := rc |
-| STTO | 1111111 111 011 rc ... | TO := rc |
-| LVAD | 1111111 111 100 rc ... | rc := VADR |
-| HALT | 1111111 111 111 111 1111111111111111 | halt system |
-
-### Memory
-
-Notice that here we change the instruction format as
-
-```
-+--------------+--------+--------+--------+--------+------+
-|    31..22    | 21..19 | 18..16 | 15..13 | 12..10 | 9..0 |
-+--------------+--------+--------+--------+--------+------+
-|  1111111 101 | op_code|   ra   |   rb   |   rc   |      |
-+--------------+--------+--------+--------+--------+------+
-```
-
-| Name | Machine Code | Meaning |
-| :----- | :----------- | :-------- |
-| LMSZ | 1111111 101 001 ra ... | ra := MEMSZ |
-| MCPY | 1111111 101 010 ra rb rc ... | memcpy(ra, rb, rc) |
-| MCMP | 1111111 101 011 ra rb rc ... | memcmp(ra, rb, rc) |
-| MCHR | 1111111 101 100 ra rb rc ... | memchr(ra, rb, rc) |
-| MSET | 1111111 101 101 ra rb rc ... | memset(ra, rb, rc) |
+| Name | Machine Code  | Meaning |
+| :--- | :------------ | :------ |
+| BIN  | 80 ra rb ...  | rb := getchar(ra) |
+| BOUT | 81 ra rb ...  | putchar(ra, rb) |
+| MFIV | 82 ra ... ... | ra := IVEC |
+| MTIV | 83 ra ... ... | IVEC := ra |
+| MFPT | 84 ra ... ... | ra := PTBR |
+| MTPT | 85 ra ... ... | PTBR := ra |
+| LFLG | 86 ra ... ... | ra := FLGS |
+| STI  | 87 02 rb ...  | set interrupt, FLGS(2) := if rb = 1 then 1 else 0 |
+| STP  | 87 01 rb ...  | set paging, FLGS(1) := if rb = 1 then 1 else 0 |
+| LVAD | 88 ra ... ... | ra := the bad virtual address |
+| TIME | 89 ra ... ... | set timeout |
+| TRAP | F0 ra ... ... | trap (system call) |
+| IRET | F1 ... ... ...| return from interrupt |
+| HALT | all one | halt system |
