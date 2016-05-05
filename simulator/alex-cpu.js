@@ -7,6 +7,9 @@ var
   regs = [],
   fregs = [],
   mem = {},
+  IVEC = new Buffer(4),
+  PTBR = new Buffer(4),
+  FLGS = new Buffer(4),
 
   writeRegister = function (idx, buf) {
     if (idx == 0) {
@@ -113,6 +116,8 @@ var
       next(exe(decode(ins)));
     };
   },
+
+  kexecutor = executor, // TODO: execute only on kernel mode
 
   insTable = {
     0x00: executor(decodeRType, function () {
@@ -250,12 +255,39 @@ var
     0x53: executor(decodeRType, exeFloat(bin.floorFloat), cont),
     0x54: executor(decodeRType, exeFloat(bin.ceilFloat), cont),
 
-    0x80: executor(decodeRType, function (args) {
+    // system instructions
+    0x80: kexecutor(decodeRType, function (args) {
 
     }, cont),
-    0x81: executor(decodeRType, function (args) {
+    0x81: kexecutor(decodeRType, function (args) {
       var code = regs[args['rb']].readUInt16LE(0, 1);
       process.stdout.write(String.fromCharCode(code));
+    }, cont),
+    0x82: kexecutor(decodeRType, function (args) {
+      writeRegister(args['ra'], IVEC);
+    }, cont),
+    0x83: kexecutor(decodeRType, function (args) {
+      IVEC = regs[args['ra']];
+    }, cont),
+    0x84: kexecutor(decodeRType, function (args) {
+      writeRegister(args['ra'], PTBR);
+    }, cont),
+    0x85: kexecutor(decodeRType, function (args) {
+      PTBR = regs[args['ra']];
+    }, cont),
+    0x86: kexecutor(decodeRType, function (args) {
+      writeRegister(args['ra'], FLGS);
+    }, cont),
+    0x87: kexecutor(decodeRType, function (args) {
+      var idx = regs[args['ra']].readInt32LE(0, 4);
+      var factor = 1 << idx;
+      var data = FLGS.readInt32LE(0, 4);
+      if (regs[args['rb']].readInt32LE(0, 4) == 1) { // set bit
+        data |= factor;
+      } else { // clear bit
+        data &= ~factor;
+      }
+      FLGS.writeInt32LE(data, 0, 4);
     }, cont),
 
     0xFF: function () {
@@ -298,7 +330,9 @@ cpu.initMemory = function (buf) {
 };
 cpu.initMemorySection = function (start, data, size, dataFunction) {
   if (typeof dataFunction === 'undefined')
-    dataFunction = function(d, i) { return d[i] };
+    dataFunction = function (d, i) {
+      return d[i]
+    };
   for (var i = 0; i < size; i++) {
     mem[start + i] = new Buffer(1);
     mem[start + i][0] = dataFunction(data, i);
@@ -406,7 +440,7 @@ cpu.readMemUInt32LE = function (address) {
   return sum;
 };
 
-cpu.initializeStack = function(address, size) {
+cpu.initializeStack = function (address, size) {
   var stackTop = address;
   for (var i = stackTop - size; i < stackTop + size; ++i) {
     mem[i] = new Buffer(1);
@@ -421,7 +455,7 @@ cpu.startRunning = function (address, countOfInstructions) {
   while (true) {
     try {
       dbg.onExecuteInstruction(cpu);
-      
+
       var pc = cpu.getPC();
       var instr = cpu.readMemUInt32LE(pc);
 
