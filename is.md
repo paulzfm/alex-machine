@@ -188,12 +188,12 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | Name | Machine Code | Meaning |
 | :--- | :----------- | :------ |
 | B    | 24 ... ... imm | PC := PC + offset(imm) |
-| BE   | 25 ra rb imm   | if ra = rb then PC := PC + offset(imm) |
+| BEQ  | 25 ra rb imm   | if ra = rb then PC := PC + offset(imm) |
+| BEQZ | 25 ra R0 imm   | if ra = 0 then PC := PC + offset(imm) |
 | BNE  | 26 ra rb imm   | if ra != rb then PC := PC + offset(imm) |
 | BNEZ | 26 ra R0 imm   | if ra != 0 then PC := PC + offset(imm) |
 | BLT  | 27 ra rb imm   | if ra < rb then PC := PC + offset(imm) |
 | BGT  | 28 ra rb imm   | if ra > rb then PC := PC + offset(imm) |
-| J    | 29 imm(24 bits)| PC :=  PC + offset(imm) |
 | JR   | 2A ra ... ...  | PC := ra |
 | CALL | 2B ra ... ...  | SP := SP - 4, store(SP, 4, PC + 4), PC := ra |
 | RET  | 2C ... ... ... | x := load(SP, 4), SP := SP + 4, PC := x |
