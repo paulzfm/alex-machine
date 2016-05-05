@@ -23,8 +23,7 @@ if (process.argv.length < 3) {
       return ['.data', '.bss', '.rodata'].indexOf(obj.name) != -1;
     });
     
-    dbg.initialize(sections, fileName + ".json");
-    dbg.printSymbols();
+    dbg.initialize(sections, fileName + ".json", cpu);;
 
     cpu.resetStatus();
 

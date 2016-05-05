@@ -5,12 +5,6 @@ var dbg = require('./debugger')
 var
   PC = new Buffer(4),
   regs = [],
-  FP = 11,
-  SP = 12,
-  GP = 13,
-  AT = 14,
-  LR = 15,
-
   fregs = [],
   mem = {},
 
@@ -82,15 +76,15 @@ var
 
   exePop = function (loader, bytes) {
     return function (args) {
-      writeRegister(args['ra'], loader(cpu.getRegister(SP), mem));
-      regs[SP] = bin.add32(regs[SP], bin.int32Buf(bytes));
+      writeRegister(args['ra'], loader(cpu.getRegister(cpu.Regs.SP), mem));
+      regs[cpu.Regs.SP] = bin.add32(regs[cpu.Regs.SP], bin.int32Buf(bytes));
     };
   },
 
   exePush = function (saver, bytes) {
     return function (args) {
-      regs[SP] = bin.sub32(regs[SP], bin.int32Buf(bytes));
-      saver(cpu.getRegister(SP), regs[args['ra']], mem);
+      regs[cpu.Regs.SP] = bin.sub32(regs[cpu.Regs.SP], bin.int32Buf(bytes));
+      saver(cpu.getRegister(cpu.Regs.SP), regs[args['ra']], mem);
     };
   },
 
@@ -185,13 +179,13 @@ var
     }, jmp),
     0x2B: executor(decodeRType, function (args) {
       var data = bin.add32(PC, bin.four32);
-      regs[SP] = bin.sub32(regs[SP], bin.four32);
-      bin.storeWord(cpu.getRegister(SP), data, mem);
+      regs[cpu.Regs.SP] = bin.sub32(regs[cpu.Regs.SP], bin.four32);
+      bin.storeWord(cpu.getRegister(cpu.Regs.SP), data, mem);
       return regs[args['ra']];
     }, jmp),
     0x2C: executor(decodeRType, function (args) {
-      var buf = bin.loadWord(cpu.getRegister(SP), mem);
-      regs[SP] = bin.add32(regs[SP], bin.four32);
+      var buf = bin.loadWord(cpu.getRegister(cpu.Regs.SP), mem);
+      regs[cpu.Regs.SP] = bin.add32(regs[cpu.Regs.SP], bin.four32);
       return buf;
     }, jmp),
 
@@ -274,6 +268,25 @@ var
   ;
 
 var cpu = {};
+
+cpu.Regs = {
+  R0: 0,
+  S0: 1,
+  S1: 2,
+  S2: 3,
+  S3: 4,
+  S4: 5,
+  T0: 6,
+  T1: 7,
+  T2: 8,
+  T3: 9,
+  T4: 10,
+  FP: 11,
+  SP: 12,
+  GP: 13,
+  AT: 14,
+  LR: 15
+};
 
 cpu.runInstruction = function (ins) {
   //console.log('running ' + ins);
@@ -382,21 +395,8 @@ cpu.fetchStatus = function () {
   }
 };
 
-cpu.sprintRegs = function () {
-  var regNames = [
-    'r0', 't0', 't1', 't2', 't3', 't4', 's0', 's1', 's2', 's3', 's4',
-    'fp', 'sp'
-  ];
-
-  var ret = sprintf("pc =\t0x%08x\n", cpu.getPC());
-  for (var i = 0; i < regNames.length; ++i) {
-    ret += sprintf(regNames[i] + " =\t0x%08x", regs[i].readUInt32LE());
-    if (i % 2 != 1)
-      ret += "\n";
-    else
-      ret += "\t";
-  }
-  return ret;
+cpu.readMemUInt8 = function (address) {
+  return mem[address].readUInt8(0) >>> 0;
 };
 
 cpu.readMemUInt32LE = function (address) {
@@ -409,41 +409,6 @@ cpu.readMemUInt32LE = function (address) {
   return sum;
 };
 
-cpu.sprintMem = function(start, count) {
-  start = (start / 4).toFixed() * 4;
-  var readMemChar = function (addr) {
-    return String.fromCharCode(mem[addr][0]);
-  };
-
-  var ret = '';
-  
-  for (var i = 0; i < count; ++i, start += 4 * 4) {
-    ret += sprintf("0x%08x:\t0x%08x 0x%08x 0x%08x 0x%08x\t", start,
-      readMemUInt32LE(start), readMemUInt32LE(start + 4), readMemUInt32LE(start + 4 * 2), readMemUInt32LE(start + 4 * 3));
-    for (var j = 0; j < 4 * 4; ++j) {
-      ret += readMemChar(start + j);
-    }
-    ret += "\n";
-  }
-
-  return ret;
-};
-
-cpu.printDebugInfo = function () {
-  try {
-    var pc = cpu.getPC(), sp = regs[SP].readUInt32LE();
-    console.log("--------------- Alex Machine Debug Info -----------------");
-    process.stdout.write(cpu.sprintRegs());
-    console.log("instructions: ");
-    process.stdout.write(cpu.sprintMem(pc, 1, 4));
-    console.log("stack: ");
-    console.log(cpu.sprintMem(sp, 4, 4));
-  }
-  catch (e) {
-    // ignore unreadable memory exception
-  }
-};
-
 cpu.initializeStack = function(address, size) {
   var stackTop = address;
   for (var i = stackTop - size; i < stackTop + size; ++i) {
@@ -452,21 +417,8 @@ cpu.initializeStack = function(address, size) {
   }
 };
 
-var pcBreakPoint, instructionBreakPoint;
-cpu.setPCBreakPoint = function (pc) {
-  pcBreakPoint = pc;
-};
-cpu.setInstructionBreakPoint = function (bp) {
-  instructionBreakPoint = bp;
-};
-
 cpu.startRunning = function (address, countOfInstructions) {
   cpu.setPC(address);
-  cpu.setInstructionBreakPoint(function (ins) {
-    //if (ins >>> 24 == 0x81)
-    //  return true;
-    return false;
-  });
 
   var instructionCounter = 0;
   while (true) {
@@ -476,15 +428,6 @@ cpu.startRunning = function (address, countOfInstructions) {
       var pc = cpu.getPC();
       var instr = cpu.readMemUInt32LE(pc);
 
-      if (pcBreakPoint && pcBreakPoint == pc) {
-        console.log(sprintf("PC Breakpoint at 0x%08x", pc));
-        break;
-      }
-      if (instructionBreakPoint && instructionBreakPoint(instr)) {
-        console.log(sprintf("Instruction Breakpoint at 0x%08x", pc));
-        break;
-      }
-
       //console.log(sprintf("0x%08x", instr));
       //cpu.printDebugInfo();
 
@@ -493,7 +436,7 @@ cpu.startRunning = function (address, countOfInstructions) {
       cpu.runInstruction(instr);
     }
     catch (e) {
-      cpu.printDebugInfo();
+      dbg.printDebugInfo();
       throw e;
     }
     instructionCounter++;
@@ -501,7 +444,7 @@ cpu.startRunning = function (address, countOfInstructions) {
       break;
   }
   console.log();
-  cpu.printDebugInfo();
+  dbg.printDebugInfo();
   console.log("Alex Machine Shutdown Normally!");
 };
 
