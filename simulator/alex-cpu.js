@@ -1,6 +1,6 @@
 var bin = require('./binary');
 var sprintf = require('sprintf');
-var dbg = require('./debugger')
+var dbg = require('./debugger');
 
 var
   PC = new Buffer(4),
@@ -177,9 +177,6 @@ var
     0x27: executor(decodeIType(bin.oext32), exeBranch(bin.lt32), jmp),
     0x28: executor(decodeIType(bin.oext32), exeBranch(bin.gt32), jmp),
 
-    0x29: executor(decodeIType(bin.oext32), function (args) {
-      return bin.add32(PC, args['imm']);
-    }, jmp),
     0x2A: executor(decodeRType, function (args) {
       return regs[args['ra']];
     }, jmp),
