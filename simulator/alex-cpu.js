@@ -1,5 +1,6 @@
 var bin = require('./binary');
 var sprintf = require('sprintf');
+var dbg = require('./debugger')
 
 var
   PC = new Buffer(4),
@@ -287,9 +288,7 @@ cpu.initMemory = function (buf) {
 };
 cpu.initMemorySection = function (start, data, size, dataFunction) {
   if (typeof dataFunction === 'undefined')
-    dataFunction = function (d, i) {
-      return d[i]
-    };
+    dataFunction = function(d, i) { return d[i] };
   for (var i = 0; i < size; i++) {
     mem[start + i] = new Buffer(1);
     mem[start + i][0] = dataFunction(data, i);
@@ -314,7 +313,7 @@ cpu.resetStatus = function () {
   for (var i = 0; i < 16; i++) {
     regs.push(new Buffer(4));
   }
-  regs[0].writeInt32LE(0, 0, 4);
+  regs[0].writeInt32LE(0, 0);
   fregs = [];
   for (var i = 0; i < 16; i++) {
     fregs.push(new Buffer(8));
@@ -400,8 +399,7 @@ cpu.sprintRegs = function () {
   return ret;
 };
 
-
-var readMemUInt32LE = function (address) {
+cpu.readMemUInt32LE = function (address) {
   var sum = 0;
   for (var i = 0; i < 4; ++i) {
     if (mem[address + i]) {
@@ -411,15 +409,14 @@ var readMemUInt32LE = function (address) {
   return sum;
 };
 
-cpu.sprintMem = function (start, count) {
+cpu.sprintMem = function(start, count) {
   start = (start / 4).toFixed() * 4;
-
   var readMemChar = function (addr) {
     return String.fromCharCode(mem[addr][0]);
   };
 
   var ret = '';
-
+  
   for (var i = 0; i < count; ++i, start += 4 * 4) {
     ret += sprintf("0x%08x:\t0x%08x 0x%08x 0x%08x 0x%08x\t", start,
       readMemUInt32LE(start), readMemUInt32LE(start + 4), readMemUInt32LE(start + 4 * 2), readMemUInt32LE(start + 4 * 3));
@@ -431,7 +428,6 @@ cpu.sprintMem = function (start, count) {
 
   return ret;
 };
-
 
 cpu.printDebugInfo = function () {
   try {
@@ -448,14 +444,13 @@ cpu.printDebugInfo = function () {
   }
 };
 
-cpu.initializeStack = function (address, size) {
+cpu.initializeStack = function(address, size) {
   var stackTop = address;
   for (var i = stackTop - size; i < stackTop + size; ++i) {
     mem[i] = new Buffer(1);
     mem[i][0] = 0;
   }
 };
-
 
 var pcBreakPoint, instructionBreakPoint;
 cpu.setPCBreakPoint = function (pc) {
@@ -476,8 +471,10 @@ cpu.startRunning = function (address, countOfInstructions) {
   var instructionCounter = 0;
   while (true) {
     try {
+      dbg.onExecuteInstruction(cpu);
+      
       var pc = cpu.getPC();
-      var instr = readMemUInt32LE(pc);
+      var instr = cpu.readMemUInt32LE(pc);
 
       if (pcBreakPoint && pcBreakPoint == pc) {
         console.log(sprintf("PC Breakpoint at 0x%08x", pc));
