@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+s = File.read ARGV[0]
+
+s.split("\n").each do |x|
+  if x =~ /^\|([\w\s]+)\|\s*([0-9a-f]{2,2})\s([^|]+)/i
+    name = $1.strip.downcase
+    opcode = $2.to_i(16)
+    operands = $3.strip.split
+    #puts opcode
+    if operands == %w'ra rb rc'
+      printf "  0x%x: InstrRRR('#{name}'),\n", opcode
+    elsif operands == %w'ra rb ...'
+      printf "  0x%x: InstrRR('#{name}'),\n", opcode
+    elsif operands == %w'ra rb imm'
+      printf "  0x%x: InstrRRI('#{name}'),\n", opcode
+    elsif operands == %w'ra ... imm'
+      printf "  0x%x: InstrRI('#{name}'),\n", opcode
+    elsif operands == %w'ra ... ...'
+      printf "  0x%x: InstrR('#{name}'),\n", opcode
+    elsif operands == %w'... ... imm'
+      printf "  0x%x: InstrI('#{name}'),\n", opcode
+    else
+      #puts "#{name} #{operands.join(" ")}"
+    end
+  end
+end

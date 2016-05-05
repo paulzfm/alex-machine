@@ -259,8 +259,8 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 
 | Name | Machine Code | Meaning |
 | :----- | :----------- | :-------- |
-| BIN  | 80 ra rb ... ... | rb := getchar(ra) |
-| BOUT | 81 ra rb ... ... | putchar(ra, rb) |
+| BIN  | 80 ra rb ... | rb := getchar(ra) |
+| BOUT | 81 ra rb ... | putchar(ra, rb) |
 | IDLE | 1111111 000 ... ... ... | response hardware interrupt (include timer) |
 | CLI  | 1111111 001 001 rc ... | clear interrupt (rc := IENA, IENA := 0) |
 | STI  | 1111111 001 010 ... ... | set interrupt (IENA := 1) |
