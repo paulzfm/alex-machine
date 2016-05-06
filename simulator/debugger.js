@@ -3,23 +3,38 @@ var fs = require('fs');
 var sprintf = require('sprintf');
 var readlineSync = require('readline-sync');
 var disasm = require('./disassembler');
+var optparse = require('optparse');
 
-var AsmStep = 1, SourceStep = 2, NoStep = 3;
-var config = {
-  stepMode: NoStep,
-  asmPrecedingLines: 2,
-  asmFollowingLines: 4,
-  indentWidth: 2
-};
+var
+  AsmStep =     "asm",
+  SourceStep =  "src",
+  NoStep =      "no",
 
-var cachedSourceFiles = {};
+  config = {
+    stepMode:           NoStep,
+    asmPrecedingLines:  2,
+    asmFollowingLines:  4,
+    indentWidth:        2
+  };
 
-var symbols = {};
-var lines = {};
-var currentIndent = 0;
-var breakpoints = {
-  pc: []
-};
+var
+  switches = [
+    ['-s', '--step [STEP_MODE]', 'Specify stepping mode, default to no step']
+  ],
+  optionParser = new optparse.OptionParser(switches);
+
+optionParser.on('step', function (opt, value) {
+  config.stepMode = value;
+});
+
+var
+  cachedSourceFiles = {},
+  symbols = {},
+  lines = {},
+  currentIndent = 2,
+  breakpoints = {
+    pc: []
+  };
 
 var readUInt32LE = function (data, start) {
   var sum = 0;
@@ -56,7 +71,11 @@ var decreaseIndent = function () {
 
 var cpu = {};
 var dbg = {};
-dbg.initialize = function (sections, lineSymbolFile, _cpu) {
+dbg.optionParser = optionParser;
+
+dbg.initialize = function (sections, lineSymbolFile, _cpu, argv) {
+  optionParser.parse(argv);
+
   cpu = _cpu;
   var symtab = (sections.filter(function (obj) {
     return obj.name == '.symtab';
@@ -84,6 +103,8 @@ dbg.initialize = function (sections, lineSymbolFile, _cpu) {
   // load debug line numbers
   lines = JSON.parse(fs.readFileSync(lineSymbolFile, 'utf8'));
 };
+
+
 
 dbg.getSymbolByAddress = function(address) {
   for (var i = 0; i < symbols.length; ++i) {
@@ -126,7 +147,7 @@ dbg.printDebugInfo = function () {
       var ins = cpu.readMemUInt32LE(pc + 4 * i);
       var str = '     ';
       if (i == 0) str = ' --> ';
-      str += sprintf("0x%08x:\t" + disasm.disassemble(ins), pc + 4 * i);
+      str += sprintf("0x%08x:  " + disasm.disassemble(ins), pc + 4 * i);
       console.log(str);
     }
     console.log("stack: ");
@@ -273,5 +294,6 @@ dbg.printBreakpoints = function () {
   }
   decreaseIndent();
 };
+
 
 module.exports = dbg;

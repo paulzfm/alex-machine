@@ -2,7 +2,8 @@
   "dependencies": {
     "chai": "~3.5.0",
     "elfy": "~0.1.0",
-    "sprintf": "^0.1.5",
-    "readline-sync": "~1.4.2"
+    "optparse": "^1.0.5",
+    "readline-sync": "~1.4.2",
+    "sprintf": "^0.1.5"
   }
 }

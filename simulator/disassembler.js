@@ -148,11 +148,15 @@ var instructions = {
 
 disasm.disassemble = function (inst) {
   var opcode = inst >>> 24;
+  var regs = inst >>> 16 & 0xFF;
+  var imm = inst & 0xFFFF;
+  var machineCode = sprintf("%02x %02x %04x  ", opcode, regs, imm);
+
   if (instructions[opcode]) {
-    return instructions[opcode](inst);
+    return machineCode + instructions[opcode](inst);
   }
   else {
-    return sprintf("Instr: 0x%08x", inst);
+    return machineCode + "unknown";
   }
 };
 
