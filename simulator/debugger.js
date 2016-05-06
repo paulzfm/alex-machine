@@ -6,7 +6,7 @@ var disasm = require('./disassembler');
 
 var AsmStep = 1, SourceStep = 2, NoStep = 3;
 var config = {
-  stepMode: SourceStep,
+  stepMode: NoStep,
   asmPrecedingLines: 2,
   asmFollowingLines: 4,
   indentWidth: 2
