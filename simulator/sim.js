@@ -11,9 +11,26 @@ var switches = [
 ];
 
 var optionParser = new optparse.OptionParser(switches);
+
+var usage = function () {
+  var options = [optionParser.options(), dbg.commandLineOptions()];
+  console.log("Usage: node sim.js OPTIONS");
+  for (var i = 0; i < options.length; ++i) {
+    for (var j = 0; j < options[i].length; ++j) {
+      console.log(
+        sprintf("\t%s %s\t%s",
+          options[i][j].short,
+          options[i][j].long,
+          options[i][j].desc
+        ))
+    }
+  }
+  process.exit(0);
+};
+
 options = { debugger: {} };
 optionParser.on('help', function() {
-  console.log(optionParser.options());
+  usage();
 });
 optionParser.on('program', function (opt, value) {
   options.program = value;
@@ -21,8 +38,7 @@ optionParser.on('program', function (opt, value) {
 optionParser.parse(process.argv);
 
 if (!options.program) {
-  console.log(optionParser.options());
-  process.exit(1);
+  usage();
 }
 
 var fileName = options.program;

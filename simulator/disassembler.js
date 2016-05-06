@@ -60,7 +60,6 @@ var InstrR = function (name) {
     return sprintf("%s\t$%s", name, parseRegister(ra));
   };
 };
-
 var InstrI = function (name) {
   return function (inst) {
     if (name[name.length-1] == 'u')
