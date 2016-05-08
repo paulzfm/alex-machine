@@ -10,6 +10,7 @@ var
   IVEC = new Buffer(4),
   PTBR = new Buffer(4),
   FLGS = new Buffer(4),
+  BAD_PC = new Buffer(4),
 
   writeRegister = function (idx, buf) {
     if (idx == 0) {
@@ -288,6 +289,12 @@ var
         data &= ~factor;
       }
       FLGS.writeInt32LE(data, 0, 4);
+    }, cont),
+    0x88: kexecutor(decodeRType, function (args) {
+      writeRegister(args['ra'], BAD_PC);
+    }, cont),
+    0x89: kexecutor(decodeRType, function (args) {
+
     }, cont),
     0x90: kexecutor(decodeRType, function (args) {
       writeRegister(args['ra'], PC);
