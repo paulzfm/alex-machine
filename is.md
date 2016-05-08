@@ -292,3 +292,78 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | TRAP | F0 ra ... ... | trap (system call) |
 | IRET | F1 ... ... ...| return from interrupt |
 | HALT | all one | halt system |
+
+## Paging
+
+### Page Table
+
+```
+                                                              PAGE FRAME
+              +-----------+-----------+----------+         +---------------+
+              | DIR 10bit |PAGE 10bit |OFF 12bit |         |               |
+              +-----+-----+-----+-----+-----+----+         |               |
+                    |           |           |              |               |
+      +-------------+           |           +------------->|    PHYSICAL   |
+      |                         |                          |    ADDRESS    |
+      |   PAGE DIRECTORY        |      PAGE TABLE          |               |
+      |  +---------------+      |   +---------------+      |               |
+      |  |               |      |   |               |      +---------------+
+      |  |               |      |   |---------------|              ^
+      |  |               |      +-->| PG TBL ENTRY  |--------------+
+      |  |---------------|          |---------------|
+      +->|   DIR ENTRY   |--+       |               |
+         |---------------|  |       |               |
+         |               |  |       |               |
+         +---------------+  |       +---------------+
+                 ^          |               ^
++-------+        |          +---------------+
+| PTBR  |--------+
++-------+
+
+```
+
+### Directory/Page Table Entry (PTE) Format
+
+DIR ENTRY
+
+```
++--------------------------------------------------+-----------------+
+|                     31..12                       |      11..0      |
++--------------------------------------------------+-----------------+
+| starting address of page table (highest 20 bits) |  property bits  |
++--------------------------------------------------+-----------------+
+```
+
+PG TBL ENTRY
+
+```
++--------------------------------------------------+-----------------+
+|                     31..12                       |      11..0      |
++--------------------------------------------------+-----------------+
+| starting address of page frame (highest 20 bits) |  property bits  |
++--------------------------------------------------+-----------------+
+```
+
+where property bits are shown in the following table:
+
+| Which Bit | Bit Operation Factor | Meaning |
+| :---: | :--------: | :------ |
+| 0 | 0x001 | present? |
+| 1 | 0x002 | writeable? |
+| 2 | 0x004 | user? |
+| 5 | 0x020 | accessed? |
+| 6 | 0x040 | dirty? |
+
+### Page Faults
+
+```
+  FMEM,   // bad physical address
+  FIPAGE, // page fault on opcode fetch
+  FWPAGE, // page fault on write
+  FRPAGE, // page fault on read
+  USER=16 // user mode exception
+```
+
+### Related Instructions
+
+MFPT, MTPT, STP, LVAD.
