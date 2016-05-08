@@ -289,6 +289,9 @@ var
       }
       FLGS.writeInt32LE(data, 0, 4);
     }, cont),
+    0x90: kexecutor(decodeRType, function (args) {
+      writeRegister(args['ra'], PC);
+    }, cont),
 
     0xFF: function () {
       console.log('HALT');

@@ -288,6 +288,7 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | STP  | 87 01 rb ...  | set paging, FLGS(1) := if rb = 1 then 1 else 0 |
 | LVAD | 88 ra ... ... | ra := the bad virtual address |
 | TIME | 89 ra ... ... | set timeout |
+| MFPC | 90 ra ... ... | ra := PC |
 | TRAP | F0 ra ... ... | trap (system call) |
 | IRET | F1 ... ... ...| return from interrupt |
 | HALT | all one | halt system |
