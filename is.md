@@ -25,18 +25,20 @@ F0~F15. All floating-point registers have 64 bits, i.e, they are represented in 
 
 | Name | Purpose |
 | :--: | :------ |
-| IVEC | interrupt vector |
+| IVEC | interrupt vector (the starting address of the interrupt table) |
 | FLGS | internal flags |
 | PTBR | starting address of page directory |
+| RTLB | starting address of the read page translation table |
+| WTLB | starting address of the write page translation table |
 
 The FLGS register is consisted of
 
 ```
-+----------+------------+--------------------+-------+-----------------+
-|  31..4   |      3     |          2         |   1   |        0        |
-+----------+------------+--------------------+-------+-----------------+
-| reserved | user mode? | Interrupt enabled? | trap? | Paging enabled? |
-+----------+------------+--------------------+-------+-----------------+
++------------+----------+------------+--------------------+----------+-----------------+
+|   31..16   |  15..4   |      3     |          2         |     1    |        0        |
++------------+----------+------------+--------------------+----------+-----------------+
+| fault code | reserved | user mode? | interrupt enabled? | reserved | paging enabled? |
++------------+----------+------------+--------------------+----------+-----------------+
 ```
 
 These registers all have 32 bits.
@@ -285,7 +287,7 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | MTPT | 85 ra ... ... | PTBR := ra |
 | LFLG | 86 ra ... ... | ra := FLGS |
 | STI  | 87 02 rb ...  | set interrupt, FLGS(2) := if rb = 1 then 1 else 0 |
-| STP  | 87 01 rb ...  | set paging, FLGS(1) := if rb = 1 then 1 else 0 |
+| STP  | 87 00 rb ...  | set paging, FLGS(0) := if rb = 1 then 1 else 0 |
 | LVAD | 88 ra ... ... | ra := the bad virtual address |
 | TIME | 89 ra ... ... | set timeout |
 | MFPC | 90 ra ... ... | ra := PC |
@@ -294,6 +296,10 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | HALT | all one | halt system |
 
 ## Paging
+
+### Related Registers
+
+PTBR, FLGS.
 
 ### Page Table
 
@@ -356,14 +362,70 @@ where property bits are shown in the following table:
 
 ### Page Faults
 
-```
-  FMEM,   // bad physical address
-  FIPAGE, // page fault on opcode fetch
-  FWPAGE, // page fault on write
-  FRPAGE, // page fault on read
-  USER=16 // user mode exception
-```
+FMEM, FIPAGE, FWPAGE, FRPAGE, USER.
+
+_See the next section for more details._
+
+### Translation Lookaside Buffer (TLB)
+
+We set TLB to speed up address transaction between virtual address and physical address. There are totally four page translation table, each of size 1MB in memory:
+
+- kernel read page translation table
+- kernel write page translation table
+- user read page translation table
+- user write page translation table
 
 ### Related Instructions
 
 MFPT, MTPT, STP, LVAD.
+
+## Interrupt/Fault
+
+### Related Registers
+
+IVEC, FLGS.
+
+### Types
+
+| Code | Name | Meaning |
+| :--: | ---- | ------- |
+| 0x06 | FMEM   | bad physical address |
+| 0x07 | FTIMER | timer interrupt |
+| 0x08 | FKEYBD | keyboard interrupt |
+| 0x09 | FPRIV  | privileged instruction |
+| 0x0A | FINST  | illegal instruction |
+| 0x0B | FSYS   | software trap |
+| 0x0C | FARITH | arithmetic trap |
+| 0x0D | FIPAGE | page fault on opcode fetch |
+| 0x0E | FWPAGE | page fault on write |
+| 0x0F | FRPAGE | page fault on read |
+| 0x10 | USER 　| user mode exception |
+
+### Deal with Interrupts/Faults
+
+#### Interrupts
+
+CPU checks whether there is interrupt before execute an instruction.
+
+- If keyboard has inputs and FLGS(2) = 1, then FLGS(31..16) := FKEYBD, FLGS(2) := 0.
+- If timer timeouts and FLGS(2) = 1, then FLGS(31..16) := FTIMER, FLGS(2) := 0.
+
+#### Faults/Traps
+
+- If FLGS(2) = 0, then throw fatal error.
+- Set `error code` as the corresponding code shown in the table above. For traps, the `error code` is FSYS.
+
+#### Entering Interrupt Program
+
+- If it is user mode now (FLGS(3) = 1), then switch SP, RTLB, WTLB to kernel's, FLGS(31..16) := USER. Otherwise, FLGS(31..16) := `error code`.
+- Push PC to kernel stack. (4 bytes)
+- Push `error code` to kernel stack. (4 bytes)
+- Jump to entry of the interrupt program.
+
+#### Return From Interrupt
+
+Call IRET to return from interrupt:
+
+- Store the return address (at current SP) as _x_.
+- Switch SP, RTLB, WTLB to user's if necessary (trap from user mode program).
+- Set PC as _x_.
