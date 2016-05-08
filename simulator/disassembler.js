@@ -60,7 +60,6 @@ var InstrR = function (name) {
     return sprintf("%s\t$%s", name, parseRegister(ra));
   };
 };
-
 var InstrI = function (name) {
   return function (inst) {
     if (name[name.length-1] == 'u')
@@ -111,7 +110,7 @@ var instructions = {
   0x22: InstrRRR('ge'),
   0x23: InstrRRR('geu'),
   0x24: InstrI('b'),
-  0x25: InstrRRI('be'),
+  0x25: InstrRRI('beq'),
   0x26: InstrRRI('bne'),
   0x27: InstrRRI('blt'),
   0x28: InstrRRI('bgt'),
@@ -135,16 +134,28 @@ var instructions = {
   0x3f: InstrR('pshb'),
   0x41: InstrR('psha'),
   0x80: InstrRR('bin'),
-  0x81: InstrRR('bout')
+  0x81: InstrRR('bout'),
+  0x82: InstrR('mfiv'),
+  0x83: InstrR('mtiv'),
+  0x84: InstrR('mfpt'),
+  0x85: InstrR('mtpt'),
+  0x86: InstrR('lflg'),
+  0x88: InstrR('lvad'),
+  0x89: InstrR('time'),
+  0xf0: InstrR('trap')
 };
 
 disasm.disassemble = function (inst) {
   var opcode = inst >>> 24;
+  var regs = inst >>> 16 & 0xFF;
+  var imm = inst & 0xFFFF;
+  var machineCode = sprintf("%02x %02x %04x  ", opcode, regs, imm);
+
   if (instructions[opcode]) {
-    return instructions[opcode](inst);
+    return machineCode + instructions[opcode](inst);
   }
   else {
-    return sprintf("Instr: 0x%08x", inst);
+    return machineCode + "unknown";
   }
 };
 

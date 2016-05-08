@@ -3,23 +3,38 @@ var fs = require('fs');
 var sprintf = require('sprintf');
 var readlineSync = require('readline-sync');
 var disasm = require('./disassembler');
+var optparse = require('optparse');
+var dwarf = require('./debugInfo');
 
-var AsmStep = 1, SourceStep = 2, NoStep = 3;
-var config = {
-  stepMode: SourceStep,
-  asmPrecedingLines: 2,
-  asmFollowingLines: 4,
-  indentWidth: 2
-};
+var
+  AsmStep =     "asm",
+  SourceStep =  "src",
+  NoStep =      "no",
 
-var cachedSourceFiles = {};
+  config = {
+    stepMode:           NoStep,
+    asmPrecedingLines:  2,
+    asmFollowingLines:  4,
+    indentWidth:        2
+  };
 
-var symbols = {};
-var lines = {};
-var currentIndent = 0;
-var breakpoints = {
-  pc: []
-};
+var
+  switches = [
+    ['-s', '--step [STEP_MODE]', 'Specify stepping mode, default to no step']
+  ],
+  optionParser = new optparse.OptionParser(switches);
+
+optionParser.on('step', function (opt, value) {
+  config.stepMode = value;
+});
+
+var
+  cachedSourceFiles = {},
+  symbols = {},
+  currentIndent = 2,
+  breakpoints = {
+    pc: []
+  };
 
 var readUInt32LE = function (data, start) {
   var sum = 0;
@@ -56,7 +71,9 @@ var decreaseIndent = function () {
 
 var cpu = {};
 var dbg = {};
-dbg.initialize = function (sections, lineSymbolFile, _cpu) {
+dbg.initialize = function (sections, debugInfoFile, _cpu, argv) {
+  optionParser.parse(argv);
+
   cpu = _cpu;
   var symtab = (sections.filter(function (obj) {
     return obj.name == '.symtab';
@@ -64,6 +81,9 @@ dbg.initialize = function (sections, lineSymbolFile, _cpu) {
   var strtab  = (sections.filter(function (obj) {
     return obj.name == '.strtab';
   }))[0];
+
+  // load debug info
+  dwarf.initialize(JSON.parse(fs.readFileSync(debugInfoFile, 'utf8')), cpu, dbg);
 
   // load symbols
   for (var i = 0; i < symtab.size / 16; ++i) {
@@ -80,9 +100,10 @@ dbg.initialize = function (sections, lineSymbolFile, _cpu) {
       "size": symSize
     };
   }
+};
 
-  // load debug line numbers
-  lines = JSON.parse(fs.readFileSync(lineSymbolFile, 'utf8'));
+dbg.commandLineOptions = function () {
+  return optionParser.options();
 };
 
 dbg.getSymbolByAddress = function(address) {
@@ -97,25 +118,6 @@ dbg.getSymbolAddress = function(name) {
   return symbols[name];
 };
 
-dbg.getAddressFileLine = function (address) {
-  for (var fileName in lines) {
-    if (lines.hasOwnProperty(fileName)) {
-      for (var lineno in lines[fileName]) {
-        if (lines[fileName].hasOwnProperty(lineno)) {
-          if (lines[fileName][lineno] == address) {
-            return {
-              file: fileName,
-              line: lineno,
-              address: address
-            }
-          }
-        }
-      }
-    }
-  }
-  return null;
-};
-
 dbg.printDebugInfo = function () {
   try {
     var pc = cpu.getPC(), sp = cpu.getRegister(cpu.Regs.SP);
@@ -126,11 +128,11 @@ dbg.printDebugInfo = function () {
       var ins = cpu.readMemUInt32LE(pc + 4 * i);
       var str = '     ';
       if (i == 0) str = ' --> ';
-      str += sprintf("0x%08x:\t" + disasm.disassemble(ins), pc + 4 * i);
+      str += sprintf("0x%08x:  " + disasm.disassemble(ins), pc + 4 * i);
       console.log(str);
     }
     console.log("stack: ");
-    console.log(dbg.sprintMem(sp, 4, 4));
+    console.log(dbg.sprintMem(sp, 4));
   }
   catch (e) {
     // ignore unreadable memory exception
@@ -177,6 +179,7 @@ dbg.sprintMem = function(start, count) {
 };
 
 dbg.debugConsole = function (pc, inst, cpu, mode, fileLine) {
+  dwarf.printLocalVariables(pc);
 
   console.log(sprintf("  PC: 0x%08x\tIns: 0x%08x", pc, inst));
   if (mode == AsmStep) {
@@ -199,6 +202,14 @@ dbg.debugConsole = function (pc, inst, cpu, mode, fileLine) {
     else if (tokens[0] == "p") {
       if (tokens.length == 1 || tokens[1] == "d") {
         dbg.printDebugInfo();
+      }
+      else if (tokens[1] == 'l') {
+        dwarf.printLocalVariables(pc);
+      }
+      else if (tokens[1] == 'm') {
+        var addr = parseInt(tokens[2], 16);
+        console.log(addr);
+        console.log(dbg.sprintMem(addr, 4));
       }
     }
     else if (tokens[0] == "x") {
@@ -223,7 +234,6 @@ dbg.debugConsole = function (pc, inst, cpu, mode, fileLine) {
   }
 };
 
-
 var readFileLine = function (file, line) {
   if (!cachedSourceFiles[file])
     cachedSourceFiles[file] = fs.readFileSync(file, 'utf8').split("\n");
@@ -234,12 +244,12 @@ var readFileLine = function (file, line) {
 dbg.onExecuteInstruction = function (c) {
   var pc = c.getPC();
   var inst = c.readMemUInt32LE(pc);
-  var fileLine = dbg.getAddressFileLine(pc);
+  var fileLine = dwarf.getAddressFileLine(pc);
 
   for (var i = 0; i < breakpoints.pc.length; ++i) {
     if (breakpoints.pc[i] == pc) {
       console.log(sprintf("breakpoint hit! 0x%08x", pc));
-      if (config.stepMode == SourceStep && fileLine) {
+      if (config.stepMode === SourceStep && fileLine) {
         dbg.debugConsole(pc, inst, c, config.stepMode, fileLine);
       }
       else {
@@ -249,13 +259,13 @@ dbg.onExecuteInstruction = function (c) {
     }
   }
 
-  if (config.stepMode != NoStep) {
-    if (config.stepMode == SourceStep) {
+  if (config.stepMode !== NoStep) {
+    if (config.stepMode === SourceStep) {
       if (!fileLine)
         return;
       dbg.debugConsole(pc, inst, c, config.stepMode, fileLine);
     }
-    else if (config.stepMode == AsmStep) {
+    else if (config.stepMode === AsmStep) {
       dbg.debugConsole(pc, inst, c, config.stepMode);
     }
   }
