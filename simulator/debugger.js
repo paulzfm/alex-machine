@@ -6,6 +6,12 @@ var disasm = require('./disassembler');
 var optparse = require('optparse');
 var dwarf = require('./debugInfo');
 
+/**
+ * Alex-Machine debugger,
+ * debug console
+ *
+ */
+
 var
   AsmStep =     "asm",
   SourceStep =  "src",
@@ -20,7 +26,7 @@ var
 
 var
   switches = [
-    ['-s', '--step [STEP_MODE]', 'Specify stepping mode, default to no step']
+    ['-s', '--step [STEP_MODE]', 'asm|src|no. Specify stepping mode, default to no step']
   ],
   optionParser = new optparse.OptionParser(switches);
 
@@ -114,8 +120,11 @@ dbg.getSymbolByAddress = function(address) {
   }
   return null;
 };
-dbg.getSymbolAddress = function(name) {
+dbg.getSymbol = function (name) {
   return symbols[name];
+};
+dbg.getSymbolAddress = function(name) {
+  return symbols[name]['value'];
 };
 
 dbg.printDebugInfo = function () {
@@ -178,6 +187,25 @@ dbg.sprintMem = function(start, count) {
   return ret;
 };
 
+function debuggerConsoleHelpInfo() {
+  return `
+  Usage: COMMAND [parameters]...
+    c             step in (or directly press Enter)
+    p d           print current context
+    p l           print local variables
+    
+    p m PHYSICAL_ADDRESS  
+                  print *((int*)(*PHYSICAL_ADDRESS))
+                  
+    x SYMBOL      print *((uint32*)(*SYMBOL_ADDRESS))
+    b PHYSICAL_ADDRESS
+                  set PC breakpoint on PHYSICAL_ADDRESS
+                  
+    bps           print all breakpoints
+    help          show this message
+  `;
+}
+
 dbg.debugConsole = function (pc, inst, cpu, mode, fileLine) {
   dwarf.printLocalVariables(pc);
 
@@ -211,12 +239,26 @@ dbg.debugConsole = function (pc, inst, cpu, mode, fileLine) {
         console.log(addr);
         console.log(dbg.sprintMem(addr, 4));
       }
+      else if (tokens[1] == 't' && tokens.length == 3) {
+        var varName = tokens[2];
+        var address = dbg.getSymbolAddress(varName);
+        var t = dwarf.getSymbolType(varName);
+        var varType = t['name'];
+        var typeOfType = t['type'];
+
+        dwarf.printTypedVariable(address, varName, varType, typeOfType);
+      }
     }
     else if (tokens[0] == "x") {
-      var sym = dbg.getSymbolAddress(tokens[1]);
+      var sym = dbg.getSymbol(tokens[1]);
       if (sym) {
         var val = cpu.readMemUInt32LE(sym.value);
-        console.log(sprintf("*((uint32_t*)%s) = 0x%08x", sym.name, val))
+        increaseIndent();
+        {
+          indentPrint(sprintf("%s = 0x%08x", sym.name, sym.value));
+          indentPrint(sprintf("*((uint32_t*)%s) = 0x%08x", sym.name, val));
+        }
+        decreaseIndent();
       }
       else {
         console.log(sprintf("symbol %s not found!", tokens[1]));
@@ -228,8 +270,31 @@ dbg.debugConsole = function (pc, inst, cpu, mode, fileLine) {
     else if (tokens[0] == 'bps') {
       dbg.printBreakpoints();
     }
+    else if (tokens[0] == 'dis') {
+      var memAddr = parseInt(tokens[1]);
+      if (isNaN(memAddr)) {
+        memAddr = cpu.getPC();
+      }
+      var str = '';
+      for (var i = -3; i < 3; ++i) {
+        var ins = cpu.readMemUInt32LE(memAddr + 4 * i);
+        if (i == 0)
+          str += ' --> ';
+        else
+          str += '     ';
+        str += sprintf("0x%08x:  %s\n", memAddr + 4 * i, disasm.disassemble(ins));
+      }
+      console.log(str);
+    }
+    else if (tokens[0] == 'help') {
+      console.log(debuggerConsoleHelpInfo());
+    }
+    else if (tokens[0] == 'dis' && tokens.length == 2) {
+
+    }
     else {
       console.log("unknown command");
+      console.log(debuggerConsoleHelpInfo());
     }
   }
 };
