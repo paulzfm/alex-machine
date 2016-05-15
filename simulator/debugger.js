@@ -3,7 +3,6 @@ var fs = require('fs');
 var sprintf = require('sprintf');
 var readlineSync = require('readline-sync');
 var disasm = require('./disassembler');
-var optparse = require('optparse');
 var dwarf = require('./debugInfo');
 
 /**
@@ -23,16 +22,6 @@ var
     asmFollowingLines:  4,
     indentWidth:        2
   };
-
-var
-  switches = [
-    ['-s', '--step [STEP_MODE]', 'asm|src|no. Specify stepping mode, default to no step']
-  ],
-  optionParser = new optparse.OptionParser(switches);
-
-optionParser.on('step', function (opt, value) {
-  config.stepMode = value;
-});
 
 var
   cachedSourceFiles = {},
@@ -77,9 +66,7 @@ var decreaseIndent = function () {
 
 var cpu = {};
 var dbg = {};
-dbg.initialize = function (sections, debugInfoFile, _cpu, argv) {
-  optionParser.parse(argv);
-
+dbg.initialize = function (sections, debugInfoFile, _cpu, options) {
   cpu = _cpu;
   var symtab = (sections.filter(function (obj) {
     return obj.name == '.symtab';
@@ -196,12 +183,16 @@ function debuggerConsoleHelpInfo() {
     
     p m PHYSICAL_ADDRESS  
                   print *((int*)(*PHYSICAL_ADDRESS))
-                  
+    p t SYMBOL
+                  print symbol with its real type
     x SYMBOL      print *((uint32*)(*SYMBOL_ADDRESS))
     b PHYSICAL_ADDRESS
                   set PC breakpoint on PHYSICAL_ADDRESS
                   
     bps           print all breakpoints
+    dis [PHYSICAL_ADDRESS]
+                  disassemble instructions at PHYSICAL_ADDRESS, 
+                  default to PC
     help          show this message
   `;
 }
