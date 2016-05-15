@@ -1,5 +1,6 @@
 var optparse = require('optparse');
 var sim = require('./sim');
+var fs = require('fs');
 var switches = [
   ['-h', '--help', 'Shows help sections'],
   ['-p', '--program PROGRAM_PATH', 'Specify Alex Machine elf executable'],
@@ -40,5 +41,10 @@ if (!options.program) {
   usage();
 }
 else {
-    sim(options.program);
+  fs.readFile(options.program, function (err, data) {
+    if (err) {
+      throw err;
+    }
+    sim(data, fs.readFileSync(options.program + ".json", 'utf8'));
+  });
 }

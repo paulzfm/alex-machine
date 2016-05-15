@@ -1,4 +1,5 @@
 var sprintf = require('sprintf');
+var stdout = require('./stdout');
 /**
  * Alex-Machine debugger
  * dwarf debug info, including symbols, 
@@ -56,7 +57,7 @@ debugInfo.printTypedVariable = function (address, varName, typeName, typeOfType)
     default:
       str += typeOfType + " " + typeName;
   }
-  console.log(str);
+  stdout.log(str);
 };
 
 debugInfo.getSymbolType = function (symbolName) {
