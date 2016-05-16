@@ -29,3 +29,10 @@
     - special/system operations
         - ~~bout~~
 - spec测试
+- 移植ucore
+    - ~~printf~~
+    - 时钟中断
+    - 其他中断/异常处理
+    - syscall
+    - paging
+    - process

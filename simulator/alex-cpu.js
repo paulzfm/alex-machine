@@ -1,6 +1,7 @@
 var bin = require('./binary');
 var sprintf = require('sprintf');
 var dbg = require('./debugger');
+var stdout = require('./stdout');
 
 var
   PC = new Buffer(4),
@@ -14,7 +15,7 @@ var
 
   writeRegister = function (idx, buf) {
     if (idx == 0) {
-      console.log('Warning: R0 is read-only.');
+      stdout.log('Warning: R0 is read-only.');
     } else {
       regs[idx] = buf;
     }
@@ -262,7 +263,8 @@ var
     }, cont),
     0x81: kexecutor(decodeRType, function (args) {
       var code = regs[args['rb']].readUInt16LE(0, 1);
-      process.stdout.write(String.fromCharCode(code));
+      //process.stdout.write(String.fromCharCode(code));
+      stdout.write(String.fromCharCode(code));
     }, cont),
     0x82: kexecutor(decodeRType, function (args) {
       writeRegister(args['ra'], IVEC);
@@ -301,7 +303,7 @@ var
     }, cont),
 
     0xFF: function () {
-      console.log('HALT');
+      stdout.log('HALT');
     }
   }
   ;
@@ -484,9 +486,9 @@ cpu.startRunning = function (address, countOfInstructions) {
     if (countOfInstructions && instructionCounter >= countOfInstructions)
       break;
   }
-  console.log();
+  stdout.log();
   dbg.printDebugInfo();
-  console.log("Alex Machine Shutdown Normally!");
+  stdout.log("Alex Machine Shutdown Normally!");
 };
 
 module.exports = cpu;

@@ -151,12 +151,12 @@ disasm.disassemble = function (inst) {
   var imm = inst & 0xFFFF;
   var machineCode = sprintf("%02x %02x %04x  ", opcode, regs, imm);
 
-  if (instructions[opcode]) {
+  if (inst == 0xffffffff)
+     return machineCode + "halt";
+  else if (instructions[opcode])
     return machineCode + instructions[opcode](inst);
-  }
-  else {
+  else
     return machineCode + "unknown";
-  }
 };
 
 module.exports = disasm;

@@ -1,10 +1,15 @@
 var elfy = require('elfy');
-var fs = require('fs');
 var sprintf = require('sprintf');
-var readlineSync = require('readline-sync');
+//var readlineSync = require('readline-sync');
 var disasm = require('./disassembler');
-var optparse = require('optparse');
 var dwarf = require('./debugInfo');
+var stdout = require('./stdout');
+
+/**
+ * Alex-Machine debugger,
+ * debug console
+ *
+ */
 
 var
   AsmStep =     "asm",
@@ -17,16 +22,6 @@ var
     asmFollowingLines:  4,
     indentWidth:        2
   };
-
-var
-  switches = [
-    ['-s', '--step [STEP_MODE]', 'Specify stepping mode, default to no step']
-  ],
-  optionParser = new optparse.OptionParser(switches);
-
-optionParser.on('step', function (opt, value) {
-  config.stepMode = value;
-});
 
 var
   cachedSourceFiles = {},
@@ -60,7 +55,7 @@ var indentPrint = function (str) {
     ret += ' ';
   }
   ret += str;
-  console.log(ret);
+  stdout.log(ret);
 };
 var increaseIndent = function () {
   currentIndent++;
@@ -71,9 +66,7 @@ var decreaseIndent = function () {
 
 var cpu = {};
 var dbg = {};
-dbg.initialize = function (sections, debugInfoFile, _cpu, argv) {
-  optionParser.parse(argv);
-
+dbg.initialize = function (sections, dwarfs, _cpu, options) {
   cpu = _cpu;
   var symtab = (sections.filter(function (obj) {
     return obj.name == '.symtab';
@@ -83,7 +76,7 @@ dbg.initialize = function (sections, debugInfoFile, _cpu, argv) {
   }))[0];
 
   // load debug info
-  dwarf.initialize(JSON.parse(fs.readFileSync(debugInfoFile, 'utf8')), cpu, dbg);
+  dwarf.initialize(dwarfs, cpu, dbg);
 
   // load symbols
   for (var i = 0; i < symtab.size / 16; ++i) {
@@ -114,25 +107,28 @@ dbg.getSymbolByAddress = function(address) {
   }
   return null;
 };
-dbg.getSymbolAddress = function(name) {
+dbg.getSymbol = function (name) {
   return symbols[name];
+};
+dbg.getSymbolAddress = function(name) {
+  return symbols[name]['value'];
 };
 
 dbg.printDebugInfo = function () {
   try {
     var pc = cpu.getPC(), sp = cpu.getRegister(cpu.Regs.SP);
-    console.log("--------------- Alex Machine Debug Info -----------------");
-    process.stdout.write(dbg.sprintRegs());
-    console.log("instructions: ");
+    stdout.log("--------------- Alex Machine Debug Info -----------------");
+    stdout.write(dbg.sprintRegs());
+    stdout.log("instructions: ");
     for (var i = -2; i < 4; ++i) {
       var ins = cpu.readMemUInt32LE(pc + 4 * i);
       var str = '     ';
       if (i == 0) str = ' --> ';
       str += sprintf("0x%08x:  " + disasm.disassemble(ins), pc + 4 * i);
-      console.log(str);
+      stdout.log(str);
     }
-    console.log("stack: ");
-    console.log(dbg.sprintMem(sp, 4));
+    stdout.log("stack: ");
+    stdout.log(dbg.sprintMem(sp, 4));
   }
   catch (e) {
     // ignore unreadable memory exception
@@ -178,12 +174,35 @@ dbg.sprintMem = function(start, count) {
   return ret;
 };
 
+function debuggerConsoleHelpInfo() {
+  return "\
+  Usage: COMMAND [parameters]...\
+    c             step in (or directly press Enter)\
+    p d           print current context\
+    p l           print local variables\
+    \
+    p m PHYSICAL_ADDRESS  \
+                  print *((int*)(*PHYSICAL_ADDRESS))\
+    p t SYMBOL\
+                  print symbol with its real type\
+    x SYMBOL      print *((uint32*)(*SYMBOL_ADDRESS))\
+    b PHYSICAL_ADDRESS\
+                  set PC breakpoint on PHYSICAL_ADDRESS\
+                  \
+    bps           print all breakpoints\
+    dis [PHYSICAL_ADDRESS]\
+                  disassemble instructions at PHYSICAL_ADDRESS, \
+                  default to PC\
+    help          show this message\
+  ";
+}
+
 dbg.debugConsole = function (pc, inst, cpu, mode, fileLine) {
   dwarf.printLocalVariables(pc);
 
-  console.log(sprintf("  PC: 0x%08x\tIns: 0x%08x", pc, inst));
+  stdout.log(sprintf("  PC: 0x%08x\tIns: 0x%08x", pc, inst));
   if (mode == AsmStep) {
-    console.log(sprintf("    %s", disasm.disassemble(inst)));
+    stdout.log(sprintf("    %s", disasm.disassemble(inst)));
   }
   else if (mode == SourceStep) {
     increaseIndent();
@@ -194,7 +213,8 @@ dbg.debugConsole = function (pc, inst, cpu, mode, fileLine) {
   }
 
   while (true) {
-    var cmd = readlineSync.question('AlexDbg => ');
+    var cmd = "";
+   // var cmd = readlineSync.question('AlexDbg => ');
     var tokens = cmd.split(" ");
     if (cmd == "" || tokens[0] == "c") {
       break;
@@ -208,18 +228,32 @@ dbg.debugConsole = function (pc, inst, cpu, mode, fileLine) {
       }
       else if (tokens[1] == 'm') {
         var addr = parseInt(tokens[2], 16);
-        console.log(addr);
-        console.log(dbg.sprintMem(addr, 4));
+        stdout.log(addr);
+        stdout.log(dbg.sprintMem(addr, 4));
+      }
+      else if (tokens[1] == 't' && tokens.length == 3) {
+        var varName = tokens[2];
+        var address = dbg.getSymbolAddress(varName);
+        var t = dwarf.getSymbolType(varName);
+        var varType = t['name'];
+        var typeOfType = t['type'];
+
+        dwarf.printTypedVariable(address, varName, varType, typeOfType);
       }
     }
     else if (tokens[0] == "x") {
-      var sym = dbg.getSymbolAddress(tokens[1]);
+      var sym = dbg.getSymbol(tokens[1]);
       if (sym) {
         var val = cpu.readMemUInt32LE(sym.value);
-        console.log(sprintf("*((uint32_t*)%s) = 0x%08x", sym.name, val))
+        increaseIndent();
+        {
+          indentPrint(sprintf("%s = 0x%08x", sym.name, sym.value));
+          indentPrint(sprintf("*((uint32_t*)%s) = 0x%08x", sym.name, val));
+        }
+        decreaseIndent();
       }
       else {
-        console.log(sprintf("symbol %s not found!", tokens[1]));
+        stdout.log(sprintf("symbol %s not found!", tokens[1]));
       }
     }
     else if (tokens[0] == 'b' && tokens[1]) {
@@ -228,8 +262,31 @@ dbg.debugConsole = function (pc, inst, cpu, mode, fileLine) {
     else if (tokens[0] == 'bps') {
       dbg.printBreakpoints();
     }
+    else if (tokens[0] == 'dis') {
+      var memAddr = parseInt(tokens[1]);
+      if (isNaN(memAddr)) {
+        memAddr = cpu.getPC();
+      }
+      var str = '';
+      for (var i = -3; i < 3; ++i) {
+        var ins = cpu.readMemUInt32LE(memAddr + 4 * i);
+        if (i == 0)
+          str += ' --> ';
+        else
+          str += '     ';
+        str += sprintf("0x%08x:  %s\n", memAddr + 4 * i, disasm.disassemble(ins));
+      }
+      stdout.log(str);
+    }
+    else if (tokens[0] == 'help') {
+      stdout.log(debuggerConsoleHelpInfo());
+    }
+    else if (tokens[0] == 'dis' && tokens.length == 2) {
+
+    }
     else {
-      console.log("unknown command");
+      stdout.log("unknown command");
+      stdout.log(debuggerConsoleHelpInfo());
     }
   }
 };
@@ -248,7 +305,7 @@ dbg.onExecuteInstruction = function (c) {
 
   for (var i = 0; i < breakpoints.pc.length; ++i) {
     if (breakpoints.pc[i] == pc) {
-      console.log(sprintf("breakpoint hit! 0x%08x", pc));
+      stdout.log(sprintf("breakpoint hit! 0x%08x", pc));
       if (config.stepMode === SourceStep && fileLine) {
         dbg.debugConsole(pc, inst, c, config.stepMode, fileLine);
       }
