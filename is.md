@@ -150,7 +150,7 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | floor(_x_) | No | float -> float | the maximum integer value less or equal than _x_ |
 | ceil(_x_) | No | float -> float | the minimal integer value greater or equal than _x_ |
 | getchar(_d_) | No | int32 -> int32 | fetch ASCII code (0~127) of the char from device _d_ |
-| putchar(_d_, _c_) | No | int32 * int32 -> () | output char _c_ (represented in ASCII code) to device _d_ |
+| putchar(_d_, _c_) | No | int32 * int32 -> int32 | output char _c_ (represented in ASCII code) to device _d_, return 1 if success |
 
 ## Instructions
 
@@ -280,18 +280,18 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | Name | Machine Code  | Meaning |
 | :--- | :------------ | :------ |
 | BIN  | 80 ra rb ...  | rb := getchar(ra) |
-| BOUT | 81 ra rb ...  | putchar(ra, rb) |
+| BOUT | 81 ra rb rc   | rc := putchar(ra, rb) |
 | MFIV | 82 ra ... ... | ra := IVEC |
 | MTIV | 83 ra ... ... | IVEC := ra |
 | MFPT | 84 ra ... ... | ra := PTBR |
 | MTPT | 85 ra ... ... | PTBR := ra |
-| LFLG | 86 ra ... ... | ra := FLGS |
-| STI  | 87 02 rb ...  | set interrupt, FLGS(2) := if rb = 1 then 1 else 0 |
-| STP  | 87 00 rb ...  | set paging, FLGS(0) := if rb = 1 then 1 else 0 |
+| STI  | 86 ra ... ... | set interrupt, ra = 0 clear / 1 set |
+| STP  | 87 ra ... ... | set paging, ra = 0 disable / 1 enable |
 | LVAD | 88 ra ... ... | ra := the bad virtual address |
 | TIME | 89 ra ... ... | set timeout |
 | MFPC | 90 ra ... ... | ra := PC |
-| TRAP | F0 ra ... ... | trap (system call) |
+| LFLG | 91 ra ... ... | ra := FLAGS |
+| TRAP | F0 ... ... ... | trap (system call) |
 | IRET | F1 ... ... ...| return from interrupt |
 | HALT | all one | halt system |
 
@@ -389,16 +389,16 @@ IVEC, FLGS.
 
 | Code | Name | Meaning |
 | :--: | ---- | ------- |
-| 0x06 | FMEM   | bad physical address |
-| 0x07 | FTIMER | timer interrupt |
-| 0x08 | FKEYBD | keyboard interrupt |
-| 0x09 | FPRIV  | privileged instruction |
-| 0x0A | FINST  | illegal instruction |
-| 0x0B | FSYS   | software trap |
-| 0x0C | FARITH | arithmetic trap |
-| 0x0D | FIPAGE | page fault on opcode fetch |
-| 0x0E | FWPAGE | page fault on write |
-| 0x0F | FRPAGE | page fault on read |
+| 0x00 | FMEM   | bad physical address |
+| 0x01 | FTIMER | timer interrupt |
+| 0x02 | FKEYBD | keyboard interrupt |
+| 0x03 | FPRIV  | privileged instruction |
+| 0x04 | FINST  | illegal instruction |
+| 0x05 | FSYS   | software trap |
+| 0x06 | FARITH | arithmetic trap |
+| 0x07 | FIPAGE | page fault on opcode fetch |
+| 0x08 | FWPAGE | page fault on write |
+| 0x09 | FRPAGE | page fault on read |
 | 0x10 | USER 　| user mode exception |
 
 ### Deal with Interrupts/Faults
