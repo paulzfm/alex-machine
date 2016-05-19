@@ -1,3 +1,4 @@
+var stdout = require('./stdout');
 var m = {};
 
 // (Number -> Number -> Number) -> Function
@@ -251,7 +252,7 @@ var load = function (size, bytes) {
     for (var i = 0; i < bytes; i++) {
       if (!mem[addr + i]) {
         mem[addr + i] = new Buffer(1);
-        console.log('Warning: memory at ' + (addr + i) + ' not exist!');
+        stdout.log('Warning: memory at ' + (addr + i) + ' not exist!');
       }
       buf[i] = mem[addr + i][0];
     }
