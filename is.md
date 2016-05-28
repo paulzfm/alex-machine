@@ -1,4 +1,4 @@
-# Instruction Set
+# Alex Instruction Set Document
 
 ## Registers
 
