@@ -1,6 +1,11 @@
 # alex-machine
 
-# Test TODOs
+## Document
+
+- [Introduction (in Chinese)](https://github.com/paulzfm/alex-machine/blob/master/doc/doc.pdf).
+- [Manual](https://github.com/paulzfm/alex-machine/blob/master/is.md).
+
+## Test TODOs
 - 初步测试
     - ~~汇编版的hello world~~
     - ~~c语言版hello world~~
