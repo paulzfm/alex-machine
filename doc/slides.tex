@@ -1,0 +1,181 @@
+\documentclass{beamer}
+
+% fonts
+\usepackage{xeCJK}
+\setCJKmainfont[BoldFont=SimHei]{SimHei}
+\setCJKfamilyfont{hei}{SimHei}
+
+\renewcommand{\r}{\alert}
+\renewcommand{\t}{\texttt}
+
+\renewcommand{\today}{\number\year 年 \number\month 月 \number\day 日}
+
+\usepackage{fontspec}
+\setmonofont{Monaco}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\begin{document}
+
+\title{Alex 指令集与模拟器}
+\author{朱俸民}
+\institute{计35}
+\date{\today}
+
+% contents
+\AtBeginSection[]
+{
+    \begin{frame}{目录}
+    	\tableofcontents[currentsection]
+	\end{frame}
+}
+
+\AtBeginSubsection[]
+{
+    \begin{frame}{目录}
+    	\tableofcontents[currentsubsection]
+	\end{frame}
+}
+
+% titlepage
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}{提纲}
+    \tableofcontents
+\end{frame}
+
+\section{指令集}
+
+\subsection{综述}
+
+\begin{frame}{综述}
+    \begin{itemize}
+        \item 32位定长
+        \item RISC
+        \item 参考了 MIPS 32、x86、v9
+        \item 易于初学者学习和掌握
+        \item 64位浮点操作
+        \item 配套工具链支持
+    \end{itemize}
+\end{frame}
+
+\subsection{动机}
+
+\begin{frame}{现有指令集功能不足}
+    \begin{itemize}
+        \item MIPS 32
+        \item x86
+        \item v9
+        \item CPU 大实验中的 MIPS 16E
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Alex 特点}
+    \begin{itemize}
+        \item 规整性
+        \item 单一性
+        \item 灵活性
+        \item 易学性
+    \end{itemize}
+\end{frame}
+
+\subsection{分类}
+
+\begin{frame}{指令分类}
+    \begin{itemize}
+        \item NOP (1)
+        \item Arithmetic/Logic (35)
+        \item Branch/Jump (9)
+        \item Load/Store (11)
+        \item Stack (10)
+        \item Conversion (3)
+        \item Floating-point (13)
+        \item System (15 - 2)
+    \end{itemize}
+\end{frame}
+
+\subsection{硬件实现参考}
+
+\begin{frame}{普通指令 (23)}
+    \begin{center}
+    \begin{tabular}{llllll}
+        \t{ADD} & \t{ADDI} & \t{ADDIU} & \t{SUB} & \t{SUBI} & \t{SUBIU} \\
+        \t{SHL} & \t{SLR} & \t{SAR} & \t{AND} & \t{OR} & \t{NOT} \\
+        \t{XOR} & \t{EQ} & \t{LT} & \t{LTU} & \t{BEQ} & \t{BLT} \\
+        \t{JR}  & \t{CALL} & \t{RET} & \t{LW} & \t{SW} & \\
+    \end{tabular}
+    \end{center}
+\end{frame}
+
+\begin{frame}{系统指令 (13)}
+    \begin{center}
+    \begin{tabular}{llllll}
+        \t{ADD} & \t{ADDI} & \t{ADDIU} & \t{SUB} & \t{SUBI} & \t{SUBIU} \\
+        \t{SHL} & \t{SLR} & \t{SAR} & \t{AND} & \t{OR} & \t{NOT} \\
+        \t{XOR} & \t{EQ} & \t{LT} & \t{LTU} & \t{BEQ} & \t{BLT} \\
+        \t{JR}  & \t{CALL} & \t{RET} & \t{LW} & \t{SW} & \\
+    \end{tabular}
+    \end{center}
+\end{frame}
+
+\begin{frame}{指令系统文档}
+    \begin{itemize}
+        \item \url{https://github.com/paulzfm/alex-machine/blob/master/is.md}
+    \end{itemize}
+\end{frame}
+
+\section{模拟器}
+
+\begin{frame}{v1}
+    \begin{itemize}
+        \item \url{https://github.com/paulzfm/alex-machine}
+        \item Node.js
+        \item 可运行除系统指令外的所有指令
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{v2}
+    \begin{itemize}
+        \item \url{https://github.com/paulzfm/v9.js}
+        \item 基于已有 v9.js 框架
+        \item 前端添加\t{alex.js}，移植全部 Alex 指令
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{仓库}
+    \begin{itemize}
+        \item \url{https://github.com/paulzfm/alex-machine}
+        \item \url{https://github.com/paulzfm/v9.js}
+        \item \url{https://github.com/a1exwang/llvm}
+        \item \url{https://github.com/a1exwang/lld}
+        \item \url{https://github.com/a1exwang/alex-cpu-test}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{文档}
+    \begin{itemize}
+        \item \url{https://github.com/paulzfm/alex-machine/blob/master/doc/doc.pdf}
+        \item \url{https://github.com/paulzfm/alex-machine/blob/master/is.md}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \begin{center}
+        {\huge \color{blue}
+            Thank you!
+        }
+    \end{center}
+
+    \begin{center}
+        {\huge \color{blue}
+            Any questions?
+        }
+    \end{center}
+\end{frame}
+
+\end{document}
