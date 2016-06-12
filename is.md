@@ -152,6 +152,8 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | getchar(_d_) | No | int32 -> int32 | fetch ASCII code (0~127) of the char from device _d_ |
 | putchar(_d_, _c_) | No | int32 * int32 -> int32 | output char _c_ (represented in ASCII code) to device _d_, return 1 if success |
 
+**NOTE:** In the following statements, all PCs mean the program counter of the instruction being currently executed, **NOT** the program counter of the next instruction (say PC + 4).
+
 ## Instructions
 
 ### Instruction Control
@@ -280,7 +282,7 @@ We use `r := e` to represent that the value of expression e is assigned to regis
 | Name | Machine Code  | Meaning |
 | :--- | :------------ | :------ |
 | BIN  | 80 ra rb ...  | rb := getchar(ra) |
-| BOUT | 81 ra rb rc   | rc := putchar(ra, rb) |
+| BOUT | 81 ra rb rc   | rc := putchar(ra, rb) _NOTE: arg rc is optional_ |
 | MFIV | 82 ra ... ... | ra := IVEC |
 | MTIV | 83 ra ... ... | IVEC := ra |
 | MFPT | 84 ra ... ... | ra := PTBR |
