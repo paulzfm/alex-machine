@@ -6,7 +6,7 @@
 - [Manual](https://github.com/paulzfm/alex-machine/blob/master/is.md).
 
 ## 工作
--朱俸民
+- 朱俸民
     - Alex 指令集设计与Spec文档
     - Alex v1 版本模拟器 (本项目)
     - Alex v2 版本模拟器，基于 JianxinMa 的[v9.js](https://github.com/JianxinMa/v9.js)，完成 Alex 模拟器的移植
